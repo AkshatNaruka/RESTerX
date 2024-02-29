@@ -1,18 +1,42 @@
 package pkg
 
 import (
+	"bytes"
 	"fmt"
-
-	"github.com/spf13/cobra"
+	"io/ioutil"
+	"net/http"
 )
 
-var UpdateCmd = &cobra.Command{
-	Use:   "update <URL>",
-	Short: "Send a PUT request to the specified URL",
-	Args:  cobra.ExactArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
-		url := args[0]
-		// Your PUT request implementation here
-		fmt.Printf("Sending PUT request to %s\n", url)
-	},
+// HandleUpdateRequest sends an UPDATE request to the specified URL and prints the response body
+func HandleUpdateRequest(url string) {
+	// Example payload, modify as needed
+	payload := []byte(`{"key": "updated_value"}`)
+
+	// Send the UPDATE request
+	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(payload))
+	if err != nil {
+		fmt.Printf("Error creating UPDATE request: %s\n", err)
+		return
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Printf("Error sending UPDATE request: %s\n", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	// Read the response body
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Printf("Error reading response body: %s\n", err)
+		return
+	}
+
+	// Print the response body
+	fmt.Println("Response Body:")
+	fmt.Println(string(body))
 }

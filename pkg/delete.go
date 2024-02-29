@@ -2,17 +2,35 @@ package pkg
 
 import (
 	"fmt"
-
-	"github.com/spf13/cobra"
+	"io/ioutil"
+	"net/http"
 )
 
-var DeleteCmd = &cobra.Command{
-	Use:   "delete <URL>",
-	Short: "Send a DELETE request to the specified URL",
-	Args:  cobra.ExactArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
-		url := args[0]
-		// Your DELETE request implementation here
-		fmt.Printf("Sending DELETE request to %s\n", url)
-	},
+// HandleDeleteRequest sends a DELETE request to the specified URL and prints the response body
+func HandleDeleteRequest(url string) {
+	// Send the DELETE request
+	req, err := http.NewRequest("DELETE", url, nil)
+	if err != nil {
+		fmt.Printf("Error creating DELETE request: %s\n", err)
+		return
+	}
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Printf("Error sending DELETE request: %s\n", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	// Read the response body
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Printf("Error reading response body: %s\n", err)
+		return
+	}
+
+	// Print the response body
+	fmt.Println("Response Body:")
+	fmt.Println(string(body))
 }

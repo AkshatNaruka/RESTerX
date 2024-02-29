@@ -42,6 +42,7 @@ func startInteractiveMenu() {
 
 		switch choice {
 		case "GET":
+			fmt.Println("Selected GET method")
 			getURL := promptURL()
 			if getURL == "" {
 				fmt.Println("URL cannot be empty")
@@ -50,12 +51,30 @@ func startInteractiveMenu() {
 			pkg.HandleGetRequest(getURL)
 		case "POST":
 			fmt.Println("Selected POST method")
+			getURL := promptURL()
+			if getURL == "" {
+				fmt.Println("URL cannot be empty")
+				break
+			}
+			pkg.HandlePostRequest(getURL)
 			// Call function to handle POST requests
 		case "UPDATE":
 			fmt.Println("Selected UPDATE method")
+			getURL := promptURL()
+			if getURL == "" {
+				fmt.Println("URL cannot be empty")
+				break
+			}
+			pkg.HandleUpdateRequest(getURL)
 			// Call function to handle UPDATE requests
 		case "DELETE":
 			fmt.Println("Selected DELETE method")
+			getURL := promptURL()
+			if getURL == "" {
+				fmt.Println("URL cannot be empty")
+				break
+			}
+			pkg.HandleDeleteRequest(getURL)
 			// Call function to handle DELETE requests
 		case "Exit":
 			fmt.Println("Exiting...")

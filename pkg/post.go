@@ -2,17 +2,32 @@ package pkg
 
 import (
 	"fmt"
-
-	"github.com/spf13/cobra"
+	"io/ioutil"
+	"net/http"
+	"bytes"
 )
 
-var PostCmd = &cobra.Command{
-	Use:   "post <URL>",
-	Short: "Send a POST request to the specified URL",
-	Args:  cobra.ExactArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
-		url := args[0]
-		// Your POST request implementation here
-		fmt.Printf("Sending POST request to %s\n", url)
-	},
+// HandlePostRequest sends a POST request to the specified URL and prints the response body
+func HandlePostRequest(url string) {
+	// Example payload, modify as needed
+	payload := []byte(`{"key": "value"}`)
+
+	// Send the POST request
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(payload))
+	if err != nil {
+		fmt.Printf("Error sending POST request: %s\n", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	// Read the response body
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Printf("Error reading response body: %s\n", err)
+		return
+	}
+
+	// Print the response body
+	fmt.Println("Response Body:")
+	fmt.Println(string(body))
 }
