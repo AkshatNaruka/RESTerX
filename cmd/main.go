@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"os"
 
+	"RestCLI/pkg"
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
-	"RestCLI/pkg"
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "api-tester",
+	Use:   "RESTCLI",
 	Short: "A simple CLI tool for testing APIs",
 	Run: func(cmd *cobra.Command, args []string) {
 		startInteractiveMenu()
@@ -30,7 +30,7 @@ func startInteractiveMenu() {
 	for {
 		prompt := promptui.Select{
 			Label: "Select an HTTP method",
-			Items: []string{"GET", "POST", "UPDATE", "DELETE", "Exit"},
+			Items: []string{"GET", "POST", "PUT", "PATCH", "HEAD", "DELETE", "Exit"},
 		}
 
 		_, choice, err := prompt.Run()
@@ -57,16 +57,30 @@ func startInteractiveMenu() {
 				break
 			}
 			pkg.HandlePostRequest(getURL)
-			// Call function to handle POST requests
-		case "UPDATE":
-			fmt.Println("Selected UPDATE method")
+		case "PUT":
+			fmt.Println("Selected PUT method")
 			getURL := promptURL()
 			if getURL == "" {
 				fmt.Println("URL cannot be empty")
 				break
 			}
-			pkg.HandleUpdateRequest(getURL)
-			// Call function to handle UPDATE requests
+			pkg.HandlePutRequest(getURL)
+		case "PATCH":
+			fmt.Println("Selected PATCH method")
+			getURL := promptURL()
+			if getURL == "" {
+				fmt.Println("URL cannot be empty")
+				break
+			}
+			pkg.HandlePatchRequest(getURL)
+		case "HEAD":
+			fmt.Println("Selected HEAD method")
+			getURL := promptURL()
+			if getURL == "" {
+				fmt.Println("URL cannot be empty")
+				break
+			}
+			pkg.HandleHeadRequest(getURL)
 		case "DELETE":
 			fmt.Println("Selected DELETE method")
 			getURL := promptURL()
