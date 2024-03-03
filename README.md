@@ -1,10 +1,10 @@
-# RESTCLI
+# RESTerX
 
-RESTCLI is a simple command-line interface (CLI) tool for testing APIs. It supports the GET, POST, PUT, PATCH, HEAD, and DELETE HTTP methods.
+RESTerX is a simple command-line interface (CLI) tool for testing APIs. It supports the GET, POST, PUT, PATCH, HEAD, and DELETE HTTP methods.
 
 ## Installation
 
-To install RESTCLI, you need to have Go installed on your machine. Once you have Go installed, you can clone this repository and build the project:
+To install RESTerX, you need to have Go installed on your machine. Once you have Go installed, you can clone this repository and build the project:
 
 ```bash
 git clone https://github.com/AkshatNaruka/RESTerX
@@ -14,7 +14,7 @@ go build
 This will create an executable file in your project directory.
 
 ## Usage
-You can run the RESTCLI tool using the following command:
+You can run the RESTerX tool using the following command:
 ```bash
 ./cmd
 ```
