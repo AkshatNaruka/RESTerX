@@ -1,27 +1,28 @@
 package pkg
 
 import (
-	"io/ioutil"
-	"log"
-	"net/http"
+	"fmt"
 )
 
+// HandlePutRequest sends a PUT request to the specified URL and prints the response
 func HandlePutRequest(url string) {
-	req, err := http.NewRequest("PUT", url, nil)
-	if err != nil {
-		log.Fatal(err)
+	response := MakeHTTPRequest("PUT", url, "", map[string]string{})
+	printResponse(response)
+}
+
+// MakePutRequest sends a PUT request and returns structured response data
+func MakePutRequest(url, body string, headers map[string]string) APIResponse {
+	return MakeHTTPRequest("PUT", url, body, headers)
+}
+
+func printResponse(response APIResponse) {
+	if response.Error != "" {
+		fmt.Printf("Error: %s\n", response.Error)
+		return
 	}
 
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	log.Println(string(body))
+	fmt.Printf("Status: %s\n", response.Status)
+	fmt.Printf("Response Time: %v\n", response.ResponseTime)
+	fmt.Println("Response Body:")
+	fmt.Println(response.Body)
 }

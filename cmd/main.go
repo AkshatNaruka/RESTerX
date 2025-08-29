@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"RestCLI/pkg"
+	"RestCLI/web"
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 )
@@ -17,7 +18,19 @@ var rootCmd = &cobra.Command{
 	},
 }
 
+var webCmd = &cobra.Command{
+	Use:   "web",
+	Short: "Start the web interface",
+	Long:  "Start the web server to access RESTerX through a web browser",
+	Run: func(cmd *cobra.Command, args []string) {
+		port, _ := cmd.Flags().GetString("port")
+		web.StartWebServer(port)
+	},
+}
+
 func init() {
+	webCmd.Flags().StringP("port", "p", "8080", "Port to run the web server on")
+	rootCmd.AddCommand(webCmd)
 }
 
 func main() {

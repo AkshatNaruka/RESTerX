@@ -1,27 +1,12 @@
 package pkg
 
-import (
-	"io/ioutil"
-	"log"
-	"net/http"
-)
-
+// HandlePatchRequest sends a PATCH request to the specified URL and prints the response
 func HandlePatchRequest(url string) {
-	req, err := http.NewRequest("PATCH", url, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
+	response := MakeHTTPRequest("PATCH", url, "", map[string]string{})
+	printResponse(response)
+}
 
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	log.Println(string(body))
+// MakePatchRequest sends a PATCH request and returns structured response data
+func MakePatchRequest(url, body string, headers map[string]string) APIResponse {
+	return MakeHTTPRequest("PATCH", url, body, headers)
 }

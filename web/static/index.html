@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RESTerX - API Testing Tool</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🚀 RESTerX</h1>
+            <p class="subtitle">Powerful API Testing Tool</p>
+            <div class="theme-toggle">
+                <button id="themeToggle" class="theme-btn">🌙</button>
+            </div>
+        </header>
+
+        <main class="main">
+            <div class="request-section">
+                <div class="request-line">
+                    <select id="methodSelect" class="method-select">
+                        <option value="GET">GET</option>
+                        <option value="POST">POST</option>
+                        <option value="PUT">PUT</option>
+                        <option value="PATCH">PATCH</option>
+                        <option value="DELETE">DELETE</option>
+                        <option value="HEAD">HEAD</option>
+                    </select>
+                    <input type="url" id="urlInput" placeholder="Enter request URL (e.g., https://jsonplaceholder.typicode.com/posts/1)" class="url-input">
+                    <button id="sendBtn" class="send-btn">Send</button>
+                </div>
+
+                <div class="tabs">
+                    <button class="tab-btn active" data-tab="headers">Headers</button>
+                    <button class="tab-btn" data-tab="body">Body</button>
+                    <button class="tab-btn" data-tab="auth">Auth</button>
+                </div>
+
+                <div class="tab-content">
+                    <div id="headers" class="tab-pane active">
+                        <div class="headers-container">
+                            <div class="header-row">
+                                <input type="text" placeholder="Header Name" class="header-key">
+                                <input type="text" placeholder="Header Value" class="header-value">
+                                <button class="remove-header">×</button>
+                            </div>
+                        </div>
+                        <button id="addHeader" class="add-btn">+ Add Header</button>
+                    </div>
+
+                    <div id="body" class="tab-pane">
+                        <div class="body-type-selector">
+                            <label><input type="radio" name="bodyType" value="none" checked> None</label>
+                            <label><input type="radio" name="bodyType" value="json"> JSON</label>
+                            <label><input type="radio" name="bodyType" value="text"> Raw Text</label>
+                            <label><input type="radio" name="bodyType" value="form"> Form Data</label>
+                        </div>
+                        <textarea id="requestBody" class="body-textarea" placeholder="Request body content..."></textarea>
+                        <div id="formData" class="form-data-container" style="display: none;">
+                            <div class="form-row">
+                                <input type="text" placeholder="Key" class="form-key">
+                                <input type="text" placeholder="Value" class="form-value">
+                                <button class="remove-form">×</button>
+                            </div>
+                            <button id="addFormData" class="add-btn">+ Add Field</button>
+                        </div>
+                    </div>
+
+                    <div id="auth" class="tab-pane">
+                        <div class="auth-type-selector">
+                            <label><input type="radio" name="authType" value="none" checked> No Auth</label>
+                            <label><input type="radio" name="authType" value="bearer"> Bearer Token</label>
+                            <label><input type="radio" name="authType" value="basic"> Basic Auth</label>
+                        </div>
+                        <div id="bearerAuth" class="auth-container" style="display: none;">
+                            <input type="text" id="bearerToken" placeholder="Bearer Token" class="auth-input">
+                        </div>
+                        <div id="basicAuth" class="auth-container" style="display: none;">
+                            <input type="text" id="basicUsername" placeholder="Username" class="auth-input">
+                            <input type="password" id="basicPassword" placeholder="Password" class="auth-input">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="response-section">
+                <div class="response-header">
+                    <h3>Response</h3>
+                    <div class="response-info">
+                        <span id="statusCode" class="status-code"></span>
+                        <span id="responseTime" class="response-time"></span>
+                    </div>
+                </div>
+
+                <div class="response-tabs">
+                    <button class="response-tab-btn active" data-tab="response-body">Body</button>
+                    <button class="response-tab-btn" data-tab="response-headers">Headers</button>
+                </div>
+
+                <div class="response-content">
+                    <div id="response-body" class="response-tab-pane active">
+                        <div class="response-controls">
+                            <button id="formatJson" class="format-btn">Format JSON</button>
+                            <button id="copyResponse" class="copy-btn">Copy</button>
+                        </div>
+                        <pre id="responseBody" class="response-text">Send a request to see the response</pre>
+                    </div>
+                    <div id="response-headers" class="response-tab-pane">
+                        <pre id="responseHeaders" class="response-text">Response headers will appear here</pre>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <div class="sidebar">
+            <h3>History</h3>
+            <div id="history" class="history-container">
+                <p class="empty-state">No requests yet</p>
+            </div>
+            <button id="clearHistory" class="clear-btn">Clear History</button>
+        </div>
+    </div>
+
+    <div id="loading" class="loading-overlay" style="display: none;">
+        <div class="loading-spinner"></div>
+        <p>Sending request...</p>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
