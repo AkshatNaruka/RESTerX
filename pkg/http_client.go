@@ -2,36 +2,25 @@ package pkg
 
 import (
 	"bytes"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"time"
 )
 
-// HandlePostRequest sends a POST request to the specified URL and prints the response body
-func HandlePostRequest(url string) {
-	// Example payload, modify as needed
-	payload := `{"key": "value"}`
-	response := MakePostRequest(url, payload, map[string]string{"Content-Type": "application/json"})
-	
-	if response.Error != "" {
-		fmt.Printf("Error: %s\n", response.Error)
-		return
-	}
-
-	// Print the response body
-	fmt.Printf("Status: %s\n", response.Status)
-	fmt.Printf("Response Time: %v\n", response.ResponseTime)
-	fmt.Println("Response Body:")
-	fmt.Println(response.Body)
-}
-
-// MakePostRequest sends a POST request and returns structured response data
-func MakePostRequest(url, body string, headers map[string]string) APIResponse {
+// MakeHTTPRequest sends an HTTP request with the specified method and returns structured response data
+func MakeHTTPRequest(method, url, body string, headers map[string]string) APIResponse {
 	start := time.Now()
 	
 	// Create request
-	req, err := http.NewRequest("POST", url, bytes.NewBufferString(body))
+	var req *http.Request
+	var err error
+	
+	if body != "" {
+		req, err = http.NewRequest(method, url, bytes.NewBufferString(body))
+	} else {
+		req, err = http.NewRequest(method, url, nil)
+	}
+	
 	if err != nil {
 		return APIResponse{
 			Error:        err.Error(),
