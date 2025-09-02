@@ -12,7 +12,11 @@
         <header class="header">
             <h1>🚀 RESTerX</h1>
             <p class="subtitle">Powerful API Testing Tool</p>
-            <div class="theme-toggle">
+            <div class="header-controls">
+                <select id="environmentSelect" class="environment-select">
+                    <option value="">No Environment</option>
+                </select>
+                <button id="manageEnv" class="env-btn">Manage Environments</button>
                 <button id="themeToggle" class="theme-btn">🌙</button>
             </div>
         </header>
@@ -36,6 +40,8 @@
                     <button class="tab-btn active" data-tab="headers">Headers</button>
                     <button class="tab-btn" data-tab="body">Body</button>
                     <button class="tab-btn" data-tab="auth">Auth</button>
+                    <button class="tab-btn" data-tab="variables">Variables</button>
+                    <button class="tab-btn" data-tab="tests">Tests</button>
                 </div>
 
                 <div class="tab-content">
@@ -82,6 +88,37 @@
                             <input type="password" id="basicPassword" placeholder="Password" class="auth-input">
                         </div>
                     </div>
+
+                    <div id="variables" class="tab-pane">
+                        <div class="variables-help">
+                            <p>Use variables in URL and body with <code>{{variable_name}}</code> syntax</p>
+                            <p>Built-in variables: {{timestamp}}, {{datetime}}, {{uuid}}, {{random_int}}</p>
+                        </div>
+                        <div class="variables-container">
+                            <div class="variable-row">
+                                <input type="text" placeholder="Variable Name" class="variable-key">
+                                <input type="text" placeholder="Variable Value" class="variable-value">
+                                <button class="remove-variable">×</button>
+                            </div>
+                        </div>
+                        <button id="addVariable" class="add-btn">+ Add Variable</button>
+                    </div>
+
+                    <div id="tests" class="tab-pane">
+                        <div class="test-help">
+                            <p>Add test scripts to validate responses automatically</p>
+                        </div>
+                        <div class="test-scripts">
+                            <h4>Pre-request Script</h4>
+                            <textarea id="preRequestScript" placeholder="// Run before request" class="script-textarea"></textarea>
+                            
+                            <h4>Test Script</h4>
+                            <textarea id="testScript" placeholder="// Example: Test status code
+// if (response.statusCode === 200) {
+//   console.log('Success');
+// }" class="script-textarea"></textarea>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -94,9 +131,33 @@
                     </div>
                 </div>
 
+                <!-- Analytics Panel -->
+                <div id="analyticsPanel" class="analytics-panel" style="display: none;">
+                    <h4>Performance Analytics</h4>
+                    <div class="analytics-stats">
+                        <div class="stat-item">
+                            <div class="stat-value" id="avgResponseTime">-</div>
+                            <div class="stat-label">Avg Response Time</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="requestCount">0</div>
+                            <div class="stat-label">Total Requests</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="successRate">-</div>
+                            <div class="stat-label">Success Rate</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="lastResponseSize">-</div>
+                            <div class="stat-label">Response Size</div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="response-tabs">
                     <button class="response-tab-btn active" data-tab="response-body">Body</button>
                     <button class="response-tab-btn" data-tab="response-headers">Headers</button>
+                    <button class="response-tab-btn" data-tab="code-gen">Code</button>
                 </div>
 
                 <div class="response-content">
@@ -110,22 +171,97 @@
                     <div id="response-headers" class="response-tab-pane">
                         <pre id="responseHeaders" class="response-text">Response headers will appear here</pre>
                     </div>
+                    <div id="code-gen" class="response-tab-pane">
+                        <div class="code-gen-controls">
+                            <select id="languageSelect" class="language-select">
+                                <option value="curl">cURL</option>
+                                <option value="javascript">JavaScript</option>
+                                <option value="python">Python</option>
+                                <option value="go">Go</option>
+                                <option value="nodejs">Node.js</option>
+                            </select>
+                            <button id="generateCode" class="generate-btn">Generate Code</button>
+                            <button id="copyCode" class="copy-btn">Copy Code</button>
+                        </div>
+                        <pre id="generatedCode" class="code-text">Click "Generate Code" to create code snippets</pre>
+                    </div>
                 </div>
             </div>
         </main>
 
         <div class="sidebar">
-            <h3>History</h3>
-            <div id="history" class="history-container">
-                <p class="empty-state">No requests yet</p>
+            <div class="sidebar-tabs">
+                <button class="sidebar-tab-btn active" data-tab="collections">Collections</button>
+                <button class="sidebar-tab-btn" data-tab="history">History</button>
             </div>
-            <button id="clearHistory" class="clear-btn">Clear History</button>
+            
+            <div id="collections" class="sidebar-pane active">
+                <div class="collections-header">
+                    <h3>Collections</h3>
+                    <button id="newCollection" class="new-btn">+ New</button>
+                </div>
+                <div id="collectionsContainer" class="collections-container">
+                    <p class="empty-state">No collections yet</p>
+                </div>
+            </div>
+            
+            <div id="history" class="sidebar-pane">
+                <h3>History</h3>
+                <div id="historyContainer" class="history-container">
+                    <p class="empty-state">No requests yet</p>
+                </div>
+                <button id="clearHistory" class="clear-btn">Clear History</button>
+            </div>
         </div>
     </div>
 
     <div id="loading" class="loading-overlay" style="display: none;">
         <div class="loading-spinner"></div>
         <p>Sending request...</p>
+    </div>
+
+    <!-- Environment Management Modal -->
+    <div id="envModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Manage Environments</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="env-list">
+                    <h4>Environments</h4>
+                    <div id="envList"></div>
+                </div>
+                <div class="env-form">
+                    <h4>Create New Environment</h4>
+                    <input type="text" id="envName" placeholder="Environment Name" class="env-input">
+                    <div class="env-variables">
+                        <div class="env-var-row">
+                            <input type="text" placeholder="Variable Name" class="env-var-key">
+                            <input type="text" placeholder="Variable Value" class="env-var-value">
+                            <button class="remove-env-var">×</button>
+                        </div>
+                    </div>
+                    <button id="addEnvVar" class="add-btn">+ Add Variable</button>
+                    <button id="createEnv" class="create-btn">Create Environment</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Collection Modal -->
+    <div id="collectionModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Create Collection</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="collectionName" placeholder="Collection Name" class="collection-input">
+                <textarea id="collectionDescription" placeholder="Description (optional)" class="collection-textarea"></textarea>
+                <button id="createCollection" class="create-btn">Create Collection</button>
+            </div>
+        </div>
     </div>
 
     <script src="js/app.js"></script>
