@@ -117,6 +117,16 @@ class RESTerX {
         // Code generation
         document.getElementById('generateCode').addEventListener('click', () => this.generateCode());
         document.getElementById('copyCode').addEventListener('click', () => this.copyGeneratedCode());
+
+        // Mock server
+        document.getElementById('createMockFromRequest').addEventListener('click', () => this.createMockFromRequest());
+        document.getElementById('viewMockEndpoints').addEventListener('click', () => this.viewMockEndpoints());
+        document.getElementById('generateApiDocs').addEventListener('click', () => this.generateApiDocs());
+
+        // Documentation
+        document.getElementById('refreshDocs').addEventListener('click', () => this.refreshDocumentation());
+        document.getElementById('exportOpenAPI').addEventListener('click', () => this.exportOpenAPI());
+        document.getElementById('copyDocs').addEventListener('click', () => this.copyDocumentation());
     }
 
     toggleTheme() {
@@ -725,6 +735,172 @@ class RESTerX {
                 }, 1000);
             }).catch(() => {
                 alert('Failed to copy code to clipboard');
+            });
+        }
+    }
+
+    createMockFromRequest() {
+        const method = document.getElementById('methodSelect').value;
+        const url = document.getElementById('urlInput').value.trim();
+        const body = document.getElementById('responseBody').textContent;
+        
+        if (!url) {
+            alert('Please enter a URL first');
+            return;
+        }
+
+        // Extract path from URL
+        let path;
+        try {
+            const urlObj = new URL(url);
+            path = urlObj.pathname;
+        } catch (e) {
+            path = url.startsWith('/') ? url : '/' + url;
+        }
+
+        const mockEndpoint = {
+            method: method,
+            path: path,
+            statusCode: 200,
+            headers: { 'Content-Type': 'application/json' },
+            body: body && body !== 'Send a request to see the response' ? body : '{"message": "Mock response"}',
+            delay: 0,
+            description: `Mock endpoint for ${method} ${path}`
+        };
+
+        this.saveMockEndpoint(mockEndpoint);
+    }
+
+    async saveMockEndpoint(endpoint) {
+        try {
+            const response = await fetch('/api/mock', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(endpoint)
+            });
+
+            if (response.ok) {
+                alert('Mock endpoint created successfully!');
+                this.viewMockEndpoints();
+            } else {
+                alert('Failed to create mock endpoint');
+            }
+        } catch (error) {
+            alert('Error creating mock endpoint: ' + error.message);
+        }
+    }
+
+    async viewMockEndpoints() {
+        try {
+            const response = await fetch('/api/mock');
+            if (response.ok) {
+                const endpoints = await response.json();
+                this.displayMockEndpoints(endpoints);
+            } else {
+                alert('Failed to load mock endpoints');
+            }
+        } catch (error) {
+            alert('Error loading mock endpoints: ' + error.message);
+        }
+    }
+
+    displayMockEndpoints(endpoints) {
+        const mockTab = document.getElementById('mock');
+        let listContainer = mockTab.querySelector('.mock-endpoints-list');
+        
+        if (!listContainer) {
+            listContainer = document.createElement('div');
+            listContainer.className = 'mock-endpoints-list';
+            mockTab.appendChild(listContainer);
+        }
+
+        if (Object.keys(endpoints).length === 0) {
+            listContainer.innerHTML = '<p class="empty-state">No mock endpoints created yet</p>';
+            return;
+        }
+
+        listContainer.innerHTML = Object.values(endpoints).map(endpoint => `
+            <div class="mock-endpoint-item">
+                <div class="mock-endpoint-info">
+                    <span class="mock-endpoint-method ${endpoint.method}">${endpoint.method}</span>
+                    <span class="mock-endpoint-path">${endpoint.path}</span>
+                    <div class="mock-endpoint-status">Status: ${endpoint.statusCode} | Delay: ${endpoint.delay}ms</div>
+                </div>
+                <button class="delete-mock-btn" onclick="app.deleteMockEndpoint('${endpoint.method}', '${endpoint.path}')">Delete</button>
+            </div>
+        `).join('');
+    }
+
+    async deleteMockEndpoint(method, path) {
+        try {
+            const response = await fetch('/api/mock', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ method, path })
+            });
+
+            if (response.ok) {
+                this.viewMockEndpoints();
+            } else {
+                alert('Failed to delete mock endpoint');
+            }
+        } catch (error) {
+            alert('Error deleting mock endpoint: ' + error.message);
+        }
+    }
+
+    async generateApiDocs() {
+        this.refreshDocumentation();
+    }
+
+    async refreshDocumentation() {
+        try {
+            const response = await fetch('/api/docs');
+            if (response.ok) {
+                const docs = await response.text();
+                document.getElementById('apiDocumentation').textContent = docs;
+            } else {
+                document.getElementById('apiDocumentation').textContent = 'Failed to load documentation';
+            }
+        } catch (error) {
+            document.getElementById('apiDocumentation').textContent = 'Error loading documentation: ' + error.message;
+        }
+    }
+
+    async exportOpenAPI() {
+        try {
+            const response = await fetch('/api/docs?format=openapi');
+            if (response.ok) {
+                const openapi = await response.json();
+                const blob = new Blob([JSON.stringify(openapi, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'api-spec.json';
+                a.click();
+                URL.revokeObjectURL(url);
+            } else {
+                alert('Failed to export OpenAPI specification');
+            }
+        } catch (error) {
+            alert('Error exporting OpenAPI: ' + error.message);
+        }
+    }
+
+    copyDocumentation() {
+        const docsElement = document.getElementById('apiDocumentation');
+        const docs = docsElement.textContent;
+        
+        if (docs && docs !== 'Click "Refresh Documentation" to generate API docs from mock endpoints') {
+            navigator.clipboard.writeText(docs).then(() => {
+                // Show brief feedback
+                const originalText = document.getElementById('copyDocs').textContent;
+                document.getElementById('copyDocs').textContent = 'Copied!';
+                setTimeout(() => {
+                    document.getElementById('copyDocs').textContent = originalText;
+                }, 1000);
+            }).catch(() => {
+                alert('Failed to copy documentation to clipboard');
             });
         }
     }

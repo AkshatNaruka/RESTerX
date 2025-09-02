@@ -18,6 +18,8 @@ func StartWebServer(port string) {
 	http.HandleFunc("/api/collections", api.CollectionsHandler)
 	http.HandleFunc("/api/environments", api.EnvironmentsHandler)
 	http.HandleFunc("/api/codegen", api.CodeGenHandler)
+	http.HandleFunc("/api/mock", api.MockServerHandler)
+	http.HandleFunc("/api/docs", api.DocumentationHandler)
 
 	fmt.Printf("🚀 RESTerX Web Server starting on http://localhost:%s\n", port)
 	fmt.Println("📡 Open your browser and navigate to the URL above")

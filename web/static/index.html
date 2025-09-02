@@ -42,6 +42,7 @@
                     <button class="tab-btn" data-tab="auth">Auth</button>
                     <button class="tab-btn" data-tab="variables">Variables</button>
                     <button class="tab-btn" data-tab="tests">Tests</button>
+                    <button class="tab-btn" data-tab="mock">Mock</button>
                 </div>
 
                 <div class="tab-content">
@@ -119,6 +120,32 @@
 // }" class="script-textarea"></textarea>
                         </div>
                     </div>
+
+                    <div id="mock" class="tab-pane">
+                        <div class="mock-help">
+                            <p>Create mock endpoints for API prototyping and testing</p>
+                            <p><strong>Mock Server URL:</strong> <code>http://localhost:3001</code></p>
+                        </div>
+                        <div class="mock-controls">
+                            <button id="createMockFromRequest" class="create-mock-btn">Create Mock from Current Request</button>
+                            <button id="viewMockEndpoints" class="view-mock-btn">View All Mocks</button>
+                            <button id="generateApiDocs" class="docs-btn">Generate API Docs</button>
+                        </div>
+                        <div class="mock-form" style="display: none;">
+                            <h4>Create Mock Endpoint</h4>
+                            <input type="text" id="mockPath" placeholder="/api/users" class="mock-input">
+                            <select id="mockMethod" class="mock-select">
+                                <option value="GET">GET</option>
+                                <option value="POST">POST</option>
+                                <option value="PUT">PUT</option>
+                                <option value="DELETE">DELETE</option>
+                            </select>
+                            <input type="number" id="mockStatusCode" placeholder="200" value="200" class="mock-input">
+                            <textarea id="mockBody" placeholder='{"message": "Hello World"}' class="mock-textarea"></textarea>
+                            <input type="number" id="mockDelay" placeholder="Delay (ms)" class="mock-input">
+                            <button id="saveMock" class="save-mock-btn">Save Mock</button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -158,6 +185,7 @@
                     <button class="response-tab-btn active" data-tab="response-body">Body</button>
                     <button class="response-tab-btn" data-tab="response-headers">Headers</button>
                     <button class="response-tab-btn" data-tab="code-gen">Code</button>
+                    <button class="response-tab-btn" data-tab="docs">Docs</button>
                 </div>
 
                 <div class="response-content">
@@ -184,6 +212,14 @@
                             <button id="copyCode" class="copy-btn">Copy Code</button>
                         </div>
                         <pre id="generatedCode" class="code-text">Click "Generate Code" to create code snippets</pre>
+                    </div>
+                    <div id="docs" class="response-tab-pane">
+                        <div class="docs-controls">
+                            <button id="refreshDocs" class="docs-btn">Refresh Documentation</button>
+                            <button id="exportOpenAPI" class="docs-btn">Export OpenAPI</button>
+                            <button id="copyDocs" class="copy-btn">Copy Docs</button>
+                        </div>
+                        <pre id="apiDocumentation" class="docs-text">Click "Refresh Documentation" to generate API docs from mock endpoints</pre>
                     </div>
                 </div>
             </div>

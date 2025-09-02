@@ -12,6 +12,7 @@ var (
 	collectionManager = pkg.NewCollectionManager()
 	variableResolver  = pkg.NewVariableResolver()
 	codeGenerator     = pkg.NewCodeGenerator()
+	mockServer        = pkg.NewMockServer("3001") // Mock server on port 3001
 )
 
 // RequestHandler handles the API request endpoint
@@ -198,4 +199,83 @@ func CodeGenHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+}
+
+// MockServerHandler handles mock server operations
+func MockServerHandler(w http.ResponseWriter, r *http.Request) {
+	// Enable CORS
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	switch r.Method {
+	case "GET":
+		// Get all mock endpoints
+		endpoints := mockServer.GetEndpoints()
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(endpoints)
+	case "POST":
+		// Create new mock endpoint
+		var endpoint pkg.MockEndpoint
+		if err := json.NewDecoder(r.Body).Decode(&endpoint); err != nil {
+			http.Error(w, "Invalid JSON request", http.StatusBadRequest)
+			return
+		}
+
+		mockServer.AddEndpoint(&endpoint)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(endpoint)
+	case "DELETE":
+		// Delete mock endpoint
+		var req struct {
+			Method string `json:"method"`
+			Path   string `json:"path"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, "Invalid JSON request", http.StatusBadRequest)
+			return
+		}
+
+		mockServer.RemoveEndpoint(req.Method, req.Path)
+		w.WriteHeader(http.StatusOK)
+	default:
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+// DocumentationHandler generates API documentation
+func DocumentationHandler(w http.ResponseWriter, r *http.Request) {
+	// Enable CORS
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	if r.Method != "GET" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	format := r.URL.Query().Get("format")
+	
+	switch format {
+	case "openapi":
+		openapi := mockServer.ExportOpenAPI()
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(openapi)
+	default:
+		// Return markdown documentation
+		doc := mockServer.GenerateDocumentation()
+		w.Header().Set("Content-Type", "text/markdown")
+		w.Write([]byte(doc))
+	}
 }
