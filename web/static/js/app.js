@@ -8,7 +8,15 @@ class RESTerX {
     init() {
         this.history = JSON.parse(localStorage.getItem('resterx-history') || '[]');
         this.currentTheme = localStorage.getItem('resterx-theme') || 'light';
+        this.collections = JSON.parse(localStorage.getItem('resterx-collections') || '[]');
+        this.environments = JSON.parse(localStorage.getItem('resterx-environments') || '[]');
+        this.activeEnvironment = localStorage.getItem('resterx-active-env') || '';
+        this.variables = JSON.parse(localStorage.getItem('resterx-variables') || '{}');
+        this.analytics = JSON.parse(localStorage.getItem('resterx-analytics') || '{"requests": [], "totalRequests": 0, "successfulRequests": 0}');
         this.applyTheme();
+        this.loadCollections();
+        this.loadEnvironments();
+        this.updateAnalytics();
     }
 
     setupEventListeners() {
@@ -66,6 +74,59 @@ class RESTerX {
                 this.sendRequest();
             }
         });
+
+        // New enhanced features event listeners
+        
+        // Environment management
+        document.getElementById('manageEnv').addEventListener('click', () => this.showEnvironmentModal());
+        document.getElementById('environmentSelect').addEventListener('change', (e) => this.setActiveEnvironment(e.target.value));
+        
+        // Sidebar tabs
+        document.querySelectorAll('.sidebar-tab-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => this.switchSidebarTab(e.target.dataset.tab));
+        });
+
+        // Collections
+        document.getElementById('newCollection').addEventListener('click', () => this.showCollectionModal());
+
+        // Variables
+        document.getElementById('addVariable').addEventListener('click', () => this.addVariableRow());
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('remove-variable')) {
+                this.removeVariableRow(e.target);
+            }
+        });
+
+        // Environment modal
+        document.getElementById('addEnvVar').addEventListener('click', () => this.addEnvVariableRow());
+        document.getElementById('createEnv').addEventListener('click', () => this.createEnvironment());
+        document.getElementById('createCollection').addEventListener('click', () => this.createCollection());
+
+        // Modal close buttons
+        document.querySelectorAll('.modal-close').forEach(btn => {
+            btn.addEventListener('click', (e) => this.closeModal(e.target.closest('.modal')));
+        });
+
+        // Close modals when clicking outside
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal')) {
+                this.closeModal(e.target);
+            }
+        });
+
+        // Code generation
+        document.getElementById('generateCode').addEventListener('click', () => this.generateCode());
+        document.getElementById('copyCode').addEventListener('click', () => this.copyGeneratedCode());
+
+        // Mock server
+        document.getElementById('createMockFromRequest').addEventListener('click', () => this.createMockFromRequest());
+        document.getElementById('viewMockEndpoints').addEventListener('click', () => this.viewMockEndpoints());
+        document.getElementById('generateApiDocs').addEventListener('click', () => this.generateApiDocs());
+
+        // Documentation
+        document.getElementById('refreshDocs').addEventListener('click', () => this.refreshDocumentation());
+        document.getElementById('exportOpenAPI').addEventListener('click', () => this.exportOpenAPI());
+        document.getElementById('copyDocs').addEventListener('click', () => this.copyDocumentation());
     }
 
     toggleTheme() {
@@ -218,15 +279,21 @@ class RESTerX {
 
     async sendRequest() {
         const method = document.getElementById('methodSelect').value;
-        const url = document.getElementById('urlInput').value.trim();
+        let url = document.getElementById('urlInput').value.trim();
 
         if (!url) {
             alert('Please enter a URL');
             return;
         }
 
+        // Resolve variables in URL and body
+        url = this.resolveVariables(url);
+        
         const headers = this.collectHeaders();
-        const body = this.collectRequestBody();
+        let body = this.collectRequestBody();
+        
+        // Resolve variables in body
+        body = this.resolveVariables(body);
 
         // Set content type for form data
         const bodyType = document.querySelector('input[name="bodyType"]:checked').value;
@@ -251,6 +318,7 @@ class RESTerX {
             const result = await response.json();
             this.displayResponse(result);
             this.addToHistory(request, result);
+            this.trackAnalytics(request, result);
         } catch (error) {
             this.displayError('Failed to send request: ' + error.message);
         } finally {
@@ -408,6 +476,488 @@ class RESTerX {
 
     disableSendButton(disable) {
         document.getElementById('sendBtn').disabled = disable;
+    }
+
+    // Enhanced Features Methods
+
+    switchSidebarTab(tabName) {
+        // Remove active class from all sidebar tabs and panes
+        document.querySelectorAll('.sidebar-tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.sidebar-pane').forEach(pane => pane.classList.remove('active'));
+
+        // Add active class to selected tab and pane
+        document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+        document.getElementById(tabName).classList.add('active');
+    }
+
+    loadCollections() {
+        // Load collections from local storage and display them
+        const container = document.getElementById('collectionsContainer');
+        if (this.collections.length === 0) {
+            container.innerHTML = '<p class="empty-state">No collections yet</p>';
+            return;
+        }
+
+        container.innerHTML = this.collections.map(collection => `
+            <div class="collection-item">
+                <h4>${collection.name}</h4>
+                <p>${collection.description || 'No description'}</p>
+                <small>${collection.requests?.length || 0} requests</small>
+            </div>
+        `).join('');
+    }
+
+    loadEnvironments() {
+        const select = document.getElementById('environmentSelect');
+        select.innerHTML = '<option value="">No Environment</option>';
+        
+        this.environments.forEach(env => {
+            const option = document.createElement('option');
+            option.value = env.id;
+            option.textContent = env.name;
+            if (env.id === this.activeEnvironment) {
+                option.selected = true;
+            }
+            select.appendChild(option);
+        });
+    }
+
+    setActiveEnvironment(envId) {
+        this.activeEnvironment = envId;
+        localStorage.setItem('resterx-active-env', envId);
+    }
+
+    showEnvironmentModal() {
+        document.getElementById('envModal').style.display = 'flex';
+        this.loadEnvironmentModal();
+    }
+
+    showCollectionModal() {
+        document.getElementById('collectionModal').style.display = 'flex';
+    }
+
+    closeModal(modal) {
+        modal.style.display = 'none';
+    }
+
+    loadEnvironmentModal() {
+        const envList = document.getElementById('envList');
+        envList.innerHTML = this.environments.map(env => `
+            <div class="env-item">
+                <span>${env.name}</span>
+                <small>${Object.keys(env.variables || {}).length} variables</small>
+            </div>
+        `).join('');
+    }
+
+    addVariableRow() {
+        const container = document.querySelector('.variables-container');
+        const row = document.createElement('div');
+        row.className = 'variable-row';
+        row.innerHTML = `
+            <input type="text" placeholder="Variable Name" class="variable-key">
+            <input type="text" placeholder="Variable Value" class="variable-value">
+            <button class="remove-variable">×</button>
+        `;
+        container.appendChild(row);
+    }
+
+    removeVariableRow(button) {
+        button.closest('.variable-row').remove();
+    }
+
+    addEnvVariableRow() {
+        const container = document.querySelector('.env-variables');
+        const row = document.createElement('div');
+        row.className = 'env-var-row';
+        row.innerHTML = `
+            <input type="text" placeholder="Variable Name" class="env-var-key">
+            <input type="text" placeholder="Variable Value" class="env-var-value">
+            <button class="remove-env-var">×</button>
+        `;
+        container.appendChild(row);
+    }
+
+    createEnvironment() {
+        const name = document.getElementById('envName').value.trim();
+        if (!name) {
+            alert('Please enter an environment name');
+            return;
+        }
+
+        const variables = {};
+        document.querySelectorAll('.env-var-row').forEach(row => {
+            const key = row.querySelector('.env-var-key').value.trim();
+            const value = row.querySelector('.env-var-value').value.trim();
+            if (key && value) {
+                variables[key] = value;
+            }
+        });
+
+        const env = {
+            id: 'env_' + Date.now(),
+            name: name,
+            variables: variables,
+            active: false
+        };
+
+        this.environments.push(env);
+        localStorage.setItem('resterx-environments', JSON.stringify(this.environments));
+        this.loadEnvironments();
+        this.closeModal(document.getElementById('envModal'));
+        
+        // Clear form
+        document.getElementById('envName').value = '';
+        document.querySelector('.env-variables').innerHTML = `
+            <div class="env-var-row">
+                <input type="text" placeholder="Variable Name" class="env-var-key">
+                <input type="text" placeholder="Variable Value" class="env-var-value">
+                <button class="remove-env-var">×</button>
+            </div>
+        `;
+    }
+
+    createCollection() {
+        const name = document.getElementById('collectionName').value.trim();
+        const description = document.getElementById('collectionDescription').value.trim();
+        
+        if (!name) {
+            alert('Please enter a collection name');
+            return;
+        }
+
+        const collection = {
+            id: 'col_' + Date.now(),
+            name: name,
+            description: description,
+            requests: [],
+            createdAt: new Date().toISOString()
+        };
+
+        this.collections.push(collection);
+        localStorage.setItem('resterx-collections', JSON.stringify(this.collections));
+        this.loadCollections();
+        this.closeModal(document.getElementById('collectionModal'));
+
+        // Clear form
+        document.getElementById('collectionName').value = '';
+        document.getElementById('collectionDescription').value = '';
+    }
+
+    collectVariables() {
+        const variables = {};
+        document.querySelectorAll('.variable-row').forEach(row => {
+            const key = row.querySelector('.variable-key').value.trim();
+            const value = row.querySelector('.variable-value').value.trim();
+            if (key && value) {
+                variables[key] = value;
+            }
+        });
+        return variables;
+    }
+
+    resolveVariables(text) {
+        // Simple variable resolution for frontend
+        let resolved = text;
+        
+        // Get active environment variables
+        let envVars = {};
+        if (this.activeEnvironment) {
+            const activeEnv = this.environments.find(env => env.id === this.activeEnvironment);
+            if (activeEnv) {
+                envVars = activeEnv.variables || {};
+            }
+        }
+
+        // Get current variables from the form
+        const currentVars = this.collectVariables();
+        const allVars = { ...envVars, ...currentVars };
+
+        // Replace variables
+        Object.keys(allVars).forEach(key => {
+            const pattern = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
+            resolved = resolved.replace(pattern, allVars[key]);
+        });
+
+        // Replace built-in variables
+        resolved = resolved.replace(/\{\{timestamp\}\}/g, Date.now());
+        resolved = resolved.replace(/\{\{datetime\}\}/g, new Date().toISOString());
+        resolved = resolved.replace(/\{\{date\}\}/g, new Date().toISOString().split('T')[0]);
+        resolved = resolved.replace(/\{\{uuid\}\}/g, 'uuid-' + Math.random().toString(36).substr(2, 9));
+        resolved = resolved.replace(/\{\{random_int\}\}/g, Math.floor(Math.random() * 1000000));
+
+        return resolved;
+    }
+
+    async generateCode() {
+        const method = document.getElementById('methodSelect').value;
+        const url = this.resolveVariables(document.getElementById('urlInput').value.trim());
+        const headers = this.collectHeaders();
+        const body = this.resolveVariables(this.collectRequestBody());
+        const language = document.getElementById('languageSelect').value;
+
+        if (!url) {
+            alert('Please enter a URL first');
+            return;
+        }
+
+        const request = { method, url, headers, body };
+
+        try {
+            const response = await fetch('/api/codegen', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ request, language })
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                document.getElementById('generatedCode').textContent = result.code;
+            } else {
+                document.getElementById('generatedCode').textContent = 'Error generating code';
+            }
+        } catch (error) {
+            document.getElementById('generatedCode').textContent = 'Error generating code: ' + error.message;
+        }
+    }
+
+    copyGeneratedCode() {
+        const codeElement = document.getElementById('generatedCode');
+        const code = codeElement.textContent;
+        
+        if (code && code !== 'Click "Generate Code" to create code snippets' && code !== 'Error generating code') {
+            navigator.clipboard.writeText(code).then(() => {
+                // Show brief feedback
+                const originalText = document.getElementById('copyCode').textContent;
+                document.getElementById('copyCode').textContent = 'Copied!';
+                setTimeout(() => {
+                    document.getElementById('copyCode').textContent = originalText;
+                }, 1000);
+            }).catch(() => {
+                alert('Failed to copy code to clipboard');
+            });
+        }
+    }
+
+    createMockFromRequest() {
+        const method = document.getElementById('methodSelect').value;
+        const url = document.getElementById('urlInput').value.trim();
+        const body = document.getElementById('responseBody').textContent;
+        
+        if (!url) {
+            alert('Please enter a URL first');
+            return;
+        }
+
+        // Extract path from URL
+        let path;
+        try {
+            const urlObj = new URL(url);
+            path = urlObj.pathname;
+        } catch (e) {
+            path = url.startsWith('/') ? url : '/' + url;
+        }
+
+        const mockEndpoint = {
+            method: method,
+            path: path,
+            statusCode: 200,
+            headers: { 'Content-Type': 'application/json' },
+            body: body && body !== 'Send a request to see the response' ? body : '{"message": "Mock response"}',
+            delay: 0,
+            description: `Mock endpoint for ${method} ${path}`
+        };
+
+        this.saveMockEndpoint(mockEndpoint);
+    }
+
+    async saveMockEndpoint(endpoint) {
+        try {
+            const response = await fetch('/api/mock', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(endpoint)
+            });
+
+            if (response.ok) {
+                alert('Mock endpoint created successfully!');
+                this.viewMockEndpoints();
+            } else {
+                alert('Failed to create mock endpoint');
+            }
+        } catch (error) {
+            alert('Error creating mock endpoint: ' + error.message);
+        }
+    }
+
+    async viewMockEndpoints() {
+        try {
+            const response = await fetch('/api/mock');
+            if (response.ok) {
+                const endpoints = await response.json();
+                this.displayMockEndpoints(endpoints);
+            } else {
+                alert('Failed to load mock endpoints');
+            }
+        } catch (error) {
+            alert('Error loading mock endpoints: ' + error.message);
+        }
+    }
+
+    displayMockEndpoints(endpoints) {
+        const mockTab = document.getElementById('mock');
+        let listContainer = mockTab.querySelector('.mock-endpoints-list');
+        
+        if (!listContainer) {
+            listContainer = document.createElement('div');
+            listContainer.className = 'mock-endpoints-list';
+            mockTab.appendChild(listContainer);
+        }
+
+        if (Object.keys(endpoints).length === 0) {
+            listContainer.innerHTML = '<p class="empty-state">No mock endpoints created yet</p>';
+            return;
+        }
+
+        listContainer.innerHTML = Object.values(endpoints).map(endpoint => `
+            <div class="mock-endpoint-item">
+                <div class="mock-endpoint-info">
+                    <span class="mock-endpoint-method ${endpoint.method}">${endpoint.method}</span>
+                    <span class="mock-endpoint-path">${endpoint.path}</span>
+                    <div class="mock-endpoint-status">Status: ${endpoint.statusCode} | Delay: ${endpoint.delay}ms</div>
+                </div>
+                <button class="delete-mock-btn" onclick="app.deleteMockEndpoint('${endpoint.method}', '${endpoint.path}')">Delete</button>
+            </div>
+        `).join('');
+    }
+
+    async deleteMockEndpoint(method, path) {
+        try {
+            const response = await fetch('/api/mock', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ method, path })
+            });
+
+            if (response.ok) {
+                this.viewMockEndpoints();
+            } else {
+                alert('Failed to delete mock endpoint');
+            }
+        } catch (error) {
+            alert('Error deleting mock endpoint: ' + error.message);
+        }
+    }
+
+    async generateApiDocs() {
+        this.refreshDocumentation();
+    }
+
+    async refreshDocumentation() {
+        try {
+            const response = await fetch('/api/docs');
+            if (response.ok) {
+                const docs = await response.text();
+                document.getElementById('apiDocumentation').textContent = docs;
+            } else {
+                document.getElementById('apiDocumentation').textContent = 'Failed to load documentation';
+            }
+        } catch (error) {
+            document.getElementById('apiDocumentation').textContent = 'Error loading documentation: ' + error.message;
+        }
+    }
+
+    async exportOpenAPI() {
+        try {
+            const response = await fetch('/api/docs?format=openapi');
+            if (response.ok) {
+                const openapi = await response.json();
+                const blob = new Blob([JSON.stringify(openapi, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'api-spec.json';
+                a.click();
+                URL.revokeObjectURL(url);
+            } else {
+                alert('Failed to export OpenAPI specification');
+            }
+        } catch (error) {
+            alert('Error exporting OpenAPI: ' + error.message);
+        }
+    }
+
+    copyDocumentation() {
+        const docsElement = document.getElementById('apiDocumentation');
+        const docs = docsElement.textContent;
+        
+        if (docs && docs !== 'Click "Refresh Documentation" to generate API docs from mock endpoints') {
+            navigator.clipboard.writeText(docs).then(() => {
+                // Show brief feedback
+                const originalText = document.getElementById('copyDocs').textContent;
+                document.getElementById('copyDocs').textContent = 'Copied!';
+                setTimeout(() => {
+                    document.getElementById('copyDocs').textContent = originalText;
+                }, 1000);
+            }).catch(() => {
+                alert('Failed to copy documentation to clipboard');
+            });
+        }
+    }
+
+    trackAnalytics(request, response) {
+        const requestData = {
+            timestamp: Date.now(),
+            method: request.method,
+            url: request.url,
+            statusCode: response.statusCode,
+            responseTime: response.responseTime || 0,
+            success: response.statusCode >= 200 && response.statusCode < 400,
+            responseSize: response.body ? response.body.length : 0
+        };
+
+        this.analytics.requests.push(requestData);
+        this.analytics.totalRequests++;
+        
+        if (requestData.success) {
+            this.analytics.successfulRequests++;
+        }
+
+        // Keep only last 100 requests for performance
+        if (this.analytics.requests.length > 100) {
+            this.analytics.requests = this.analytics.requests.slice(-100);
+        }
+
+        localStorage.setItem('resterx-analytics', JSON.stringify(this.analytics));
+        this.updateAnalytics();
+    }
+
+    updateAnalytics() {
+        if (this.analytics.totalRequests === 0) {
+            return;
+        }
+
+        // Show analytics panel
+        document.getElementById('analyticsPanel').style.display = 'block';
+
+        // Calculate average response time
+        const totalTime = this.analytics.requests.reduce((sum, req) => sum + (req.responseTime || 0), 0);
+        const avgTime = totalTime / this.analytics.requests.length;
+        document.getElementById('avgResponseTime').textContent = `${Math.round(avgTime / 1000000)}ms`;
+
+        // Update request count
+        document.getElementById('requestCount').textContent = this.analytics.totalRequests;
+
+        // Calculate success rate
+        const successRate = (this.analytics.successfulRequests / this.analytics.totalRequests * 100).toFixed(1);
+        document.getElementById('successRate').textContent = `${successRate}%`;
+
+        // Last response size
+        if (this.analytics.requests.length > 0) {
+            const lastRequest = this.analytics.requests[this.analytics.requests.length - 1];
+            const sizeKB = (lastRequest.responseSize / 1024).toFixed(1);
+            document.getElementById('lastResponseSize').textContent = `${sizeKB}KB`;
+        }
     }
 }
 
