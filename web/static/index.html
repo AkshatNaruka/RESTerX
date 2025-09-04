@@ -16,13 +16,35 @@
                 <select id="environmentSelect" class="environment-select">
                     <option value="">No Environment</option>
                 </select>
-                <button id="manageEnv" class="env-btn">Manage Environments</button>
+                <button id="manageEnv" class="env-btn">
+                    <span>⚙️</span>Manage Environments
+                </button>
+                <button id="shortcutsBtn" class="shortcuts-btn" title="View Keyboard Shortcuts (?)">
+                    <span>⌨️</span>
+                </button>
                 <button id="themeToggle" class="theme-btn">🌙</button>
             </div>
         </header>
 
         <main class="main">
             <div class="request-section">
+                <div class="request-controls">
+                    <div class="templates-section">
+                        <label for="templateSelect" class="template-label">
+                            <span class="template-icon">🚀</span>Quick Templates:
+                        </label>
+                        <select id="templateSelect" class="template-select">
+                            <option value="">Select a template...</option>
+                            <option value="jsonplaceholder-posts">JSONPlaceholder - Posts</option>
+                            <option value="jsonplaceholder-users">JSONPlaceholder - Users</option>
+                            <option value="httpbin-get">HTTPBin - GET Test</option>
+                            <option value="httpbin-post">HTTPBin - POST Test</option>
+                            <option value="github-api">GitHub API - User Info</option>
+                            <option value="rest-countries">REST Countries API</option>
+                        </select>
+                    </div>
+                </div>
+                
                 <div class="request-line">
                     <select id="methodSelect" class="method-select">
                         <option value="GET">GET</option>
@@ -37,12 +59,24 @@
                 </div>
 
                 <div class="tabs">
-                    <button class="tab-btn active" data-tab="headers">Headers</button>
-                    <button class="tab-btn" data-tab="body">Body</button>
-                    <button class="tab-btn" data-tab="auth">Auth</button>
-                    <button class="tab-btn" data-tab="variables">Variables</button>
-                    <button class="tab-btn" data-tab="tests">Tests</button>
-                    <button class="tab-btn" data-tab="mock">Mock</button>
+                    <button class="tab-btn active" data-tab="headers">
+                        <span class="tab-icon">📄</span>Headers
+                    </button>
+                    <button class="tab-btn" data-tab="body">
+                        <span class="tab-icon">📝</span>Body
+                    </button>
+                    <button class="tab-btn" data-tab="auth">
+                        <span class="tab-icon">🔐</span>Auth
+                    </button>
+                    <button class="tab-btn" data-tab="variables">
+                        <span class="tab-icon">🔧</span>Variables
+                    </button>
+                    <button class="tab-btn" data-tab="tests">
+                        <span class="tab-icon">🧪</span>Tests
+                    </button>
+                    <button class="tab-btn" data-tab="mock">
+                        <span class="tab-icon">🎭</span>Mock
+                    </button>
                 </div>
 
                 <div class="tab-content">
@@ -182,10 +216,18 @@
                 </div>
 
                 <div class="response-tabs">
-                    <button class="response-tab-btn active" data-tab="response-body">Body</button>
-                    <button class="response-tab-btn" data-tab="response-headers">Headers</button>
-                    <button class="response-tab-btn" data-tab="code-gen">Code</button>
-                    <button class="response-tab-btn" data-tab="docs">Docs</button>
+                    <button class="response-tab-btn active" data-tab="response-body">
+                        <span class="tab-icon">📄</span>Body
+                    </button>
+                    <button class="response-tab-btn" data-tab="response-headers">
+                        <span class="tab-icon">📋</span>Headers
+                    </button>
+                    <button class="response-tab-btn" data-tab="code-gen">
+                        <span class="tab-icon">💻</span>Code
+                    </button>
+                    <button class="response-tab-btn" data-tab="docs">
+                        <span class="tab-icon">📚</span>Docs
+                    </button>
                 </div>
 
                 <div class="response-content">
@@ -296,6 +338,65 @@
                 <input type="text" id="collectionName" placeholder="Collection Name" class="collection-input">
                 <textarea id="collectionDescription" placeholder="Description (optional)" class="collection-textarea"></textarea>
                 <button id="createCollection" class="create-btn">Create Collection</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Keyboard Shortcuts Modal -->
+    <div id="shortcutsModal" class="modal" style="display: none;">
+        <div class="modal-content shortcuts-modal">
+            <div class="modal-header">
+                <h3>⌨️ Keyboard Shortcuts</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="shortcuts-grid">
+                    <div class="shortcut-category">
+                        <h4>🚀 Request Actions</h4>
+                        <div class="shortcut-item">
+                            <kbd>Ctrl</kbd> + <kbd>Enter</kbd>
+                            <span>Send Request</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>F</kbd>
+                            <span>Format JSON Response</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>Ctrl</kbd> + <kbd>C</kbd>
+                            <span>Copy Response</span>
+                        </div>
+                    </div>
+                    <div class="shortcut-category">
+                        <h4>🎯 Navigation</h4>
+                        <div class="shortcut-item">
+                            <kbd>1</kbd> - <kbd>6</kbd>
+                            <span>Switch Request Tabs</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>Ctrl</kbd> + <kbd>1</kbd> - <kbd>4</kbd>
+                            <span>Switch Response Tabs</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>Ctrl</kbd> + <kbd>H</kbd>
+                            <span>Toggle History</span>
+                        </div>
+                    </div>
+                    <div class="shortcut-category">
+                        <h4>⚙️ General</h4>
+                        <div class="shortcut-item">
+                            <kbd>Ctrl</kbd> + <kbd>T</kbd>
+                            <span>Toggle Theme</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>?</kbd>
+                            <span>Show Shortcuts</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>Esc</kbd>
+                            <span>Close Modal</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
