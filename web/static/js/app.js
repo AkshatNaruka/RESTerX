@@ -23,6 +23,12 @@ class RESTerX {
         // Theme toggle
         document.getElementById('themeToggle').addEventListener('click', () => this.toggleTheme());
 
+        // Shortcuts modal
+        document.getElementById('shortcutsBtn').addEventListener('click', () => this.showShortcutsModal());
+
+        // Template selector
+        document.getElementById('templateSelect').addEventListener('change', (e) => this.loadTemplate(e.target.value));
+
         // Send request
         document.getElementById('sendBtn').addEventListener('click', () => this.sendRequest());
 
@@ -47,6 +53,9 @@ class RESTerX {
         document.querySelectorAll('input[name="bodyType"]').forEach(radio => {
             radio.addEventListener('change', (e) => this.handleBodyTypeChange(e.target.value));
         });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => this.handleKeyboardShortcuts(e));
 
         // Auth type change
         document.querySelectorAll('input[name="authType"]').forEach(radio => {
@@ -958,6 +967,298 @@ class RESTerX {
             const sizeKB = (lastRequest.responseSize / 1024).toFixed(1);
             document.getElementById('lastResponseSize').textContent = `${sizeKB}KB`;
         }
+    }
+
+    // Keyboard Shortcuts
+    handleKeyboardShortcuts(e) {
+        // Ignore shortcuts if user is typing in an input
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+            return;
+        }
+
+        // Ctrl+Enter: Send request
+        if (e.ctrlKey && e.key === 'Enter') {
+            e.preventDefault();
+            this.sendRequest();
+            return;
+        }
+
+        // Ctrl+T: Toggle theme
+        if (e.ctrlKey && e.key === 't') {
+            e.preventDefault();
+            this.toggleTheme();
+            return;
+        }
+
+        // Ctrl+Shift+F: Format JSON response
+        if (e.ctrlKey && e.shiftKey && e.key === 'F') {
+            e.preventDefault();
+            this.formatJsonResponse();
+            return;
+        }
+
+        // Ctrl+C: Copy response (when response area is focused)
+        if (e.ctrlKey && e.key === 'c' && document.querySelector('#responseBody:focus')) {
+            e.preventDefault();
+            this.copyResponse();
+            return;
+        }
+
+        // Ctrl+H: Toggle history sidebar
+        if (e.ctrlKey && e.key === 'h') {
+            e.preventDefault();
+            this.switchSidebarTab('history');
+            return;
+        }
+
+        // Number keys 1-6: Switch request tabs
+        if (!e.ctrlKey && !e.shiftKey && /^[1-6]$/.test(e.key)) {
+            e.preventDefault();
+            const tabs = ['headers', 'body', 'auth', 'variables', 'tests', 'mock'];
+            const tabIndex = parseInt(e.key) - 1;
+            if (tabs[tabIndex]) {
+                this.switchTab(tabs[tabIndex]);
+            }
+            return;
+        }
+
+        // Ctrl+Number keys 1-4: Switch response tabs
+        if (e.ctrlKey && /^[1-4]$/.test(e.key)) {
+            e.preventDefault();
+            const responseTabs = ['response-body', 'response-headers', 'code-gen', 'docs'];
+            const tabIndex = parseInt(e.key) - 1;
+            if (responseTabs[tabIndex]) {
+                this.switchResponseTab(responseTabs[tabIndex]);
+            }
+            return;
+        }
+
+        // ? key: Show shortcuts
+        if (e.key === '?' && !e.ctrlKey && !e.shiftKey) {
+            e.preventDefault();
+            this.showShortcutsModal();
+            return;
+        }
+
+        // Escape: Close modals
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            const modals = document.querySelectorAll('.modal');
+            modals.forEach(modal => {
+                if (modal.style.display !== 'none') {
+                    this.closeModal(modal);
+                }
+            });
+            return;
+        }
+    }
+
+    showShortcutsModal() {
+        document.getElementById('shortcutsModal').style.display = 'flex';
+        
+        // Add escape key handler for modal
+        const modal = document.getElementById('shortcutsModal');
+        const closeBtn = modal.querySelector('.modal-close');
+        
+        closeBtn.onclick = () => this.closeModal(modal);
+        modal.onclick = (e) => {
+            if (e.target === modal) {
+                this.closeModal(modal);
+            }
+        };
+    }
+
+    // Enhanced history with timestamps
+    addToHistory(request, response) {
+        const historyItem = {
+            id: Date.now(),
+            timestamp: new Date().toISOString(),
+            method: request.method,
+            url: request.url,
+            headers: request.headers,
+            body: request.body,
+            response: {
+                statusCode: response.statusCode,
+                status: response.status,
+                responseTime: response.responseTime
+            }
+        };
+
+        this.history.unshift(historyItem);
+        
+        // Keep only last 50 requests
+        if (this.history.length > 50) {
+            this.history = this.history.slice(0, 50);
+        }
+
+        this.saveHistory();
+        this.renderHistory();
+    }
+
+    // Enhanced history rendering with timestamps
+    renderHistory() {
+        const container = document.getElementById('historyContainer');
+        if (!container) return;
+
+        if (this.history.length === 0) {
+            container.innerHTML = '<p class="empty-state">No requests yet</p>';
+            return;
+        }
+
+        container.innerHTML = this.history.map(item => {
+            const date = new Date(item.timestamp);
+            const timeAgo = this.getTimeAgo(date);
+            
+            return `
+                <div class="history-item" onclick="app.loadHistoryItem(${item.id})">
+                    <div class="history-method">${item.method}</div>
+                    <div class="history-url">${item.url}</div>
+                    <div class="history-timestamp">${timeAgo}</div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    getTimeAgo(date) {
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+
+        if (diffMins < 1) return 'Just now';
+        if (diffMins < 60) return `${diffMins}m ago`;
+        if (diffHours < 24) return `${diffHours}h ago`;
+        return `${diffDays}d ago`;
+    }
+
+    // Template functionality
+    loadTemplate(templateId) {
+        if (!templateId) return;
+
+        const templates = {
+            'jsonplaceholder-posts': {
+                method: 'GET',
+                url: 'https://jsonplaceholder.typicode.com/posts',
+                headers: { 'Content-Type': 'application/json' },
+                body: '',
+                description: 'Fetch sample posts from JSONPlaceholder'
+            },
+            'jsonplaceholder-users': {
+                method: 'GET',
+                url: 'https://jsonplaceholder.typicode.com/users',
+                headers: { 'Content-Type': 'application/json' },
+                body: '',
+                description: 'Fetch sample users from JSONPlaceholder'
+            },
+            'httpbin-get': {
+                method: 'GET',
+                url: 'https://httpbin.org/get?test=123',
+                headers: { 'User-Agent': 'RESTerX/1.0' },
+                body: '',
+                description: 'Test GET request with HTTPBin'
+            },
+            'httpbin-post': {
+                method: 'POST',
+                url: 'https://httpbin.org/post',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: 'Hello from RESTerX!', timestamp: new Date().toISOString() }, null, 2),
+                description: 'Test POST request with HTTPBin'
+            },
+            'github-api': {
+                method: 'GET',
+                url: 'https://api.github.com/users/octocat',
+                headers: { 'Accept': 'application/vnd.github.v3+json' },
+                body: '',
+                description: 'Fetch GitHub user information'
+            },
+            'rest-countries': {
+                method: 'GET',
+                url: 'https://restcountries.com/v3.1/name/india',
+                headers: { 'Accept': 'application/json' },
+                body: '',
+                description: 'Get country information from REST Countries API'
+            }
+        };
+
+        const template = templates[templateId];
+        if (!template) return;
+
+        // Set method
+        document.getElementById('methodSelect').value = template.method;
+
+        // Set URL
+        document.getElementById('urlInput').value = template.url;
+
+        // Set headers
+        this.clearHeaders();
+        Object.entries(template.headers).forEach(([key, value]) => {
+            this.addHeaderRow(key, value);
+        });
+
+        // Set body if exists
+        if (template.body) {
+            // Switch to body tab
+            this.switchTab('body');
+            // Set body type to JSON if it looks like JSON
+            if (template.body.trim().startsWith('{')) {
+                document.querySelector('input[name="bodyType"][value="json"]').checked = true;
+                this.handleBodyTypeChange('json');
+            }
+            document.getElementById('bodyText').value = template.body;
+        }
+
+        // Show notification
+        this.showNotification(`Template loaded: ${template.description}`, 'success');
+
+        // Reset template selector
+        document.getElementById('templateSelect').value = '';
+    }
+
+    clearHeaders() {
+        const container = document.querySelector('.headers-container');
+        // Keep one empty row
+        container.innerHTML = `
+            <div class="header-row">
+                <input type="text" placeholder="Header Name" class="header-key">
+                <input type="text" placeholder="Header Value" class="header-value">
+                <button class="remove-header">×</button>
+            </div>
+        `;
+    }
+
+    addHeaderRow(key = '', value = '') {
+        const container = document.querySelector('.headers-container');
+        const row = document.createElement('div');
+        row.className = 'header-row';
+        row.innerHTML = `
+            <input type="text" placeholder="Header Name" class="header-key" value="${key}">
+            <input type="text" placeholder="Header Value" class="header-value" value="${value}">
+            <button class="remove-header">×</button>
+        `;
+        container.appendChild(row);
+    }
+
+    showNotification(message, type = 'info') {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = `notification notification-${type}`;
+        notification.innerHTML = `
+            <span class="notification-icon">${type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️'}</span>
+            <span class="notification-message">${message}</span>
+        `;
+
+        // Add to body
+        document.body.appendChild(notification);
+
+        // Show with animation
+        setTimeout(() => notification.classList.add('show'), 100);
+
+        // Remove after 3 seconds
+        setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => notification.remove(), 300);
+        }, 3000);
     }
 }
 
