@@ -94,6 +94,24 @@ To contribute to RESTerX:
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
+## 🚀 Static Site Deployment
+
+RESTerX includes automatic deployment of the web interface as a static site to GitHub Pages. The deployment workflow is triggered automatically on pushes to the main branch.
+
+### How it works:
+- The GitHub Actions workflow copies the static files from `web/static/` directory
+- Deploys them to GitHub Pages for easy access without running a local server
+- The static site provides basic HTTP request testing functionality for external APIs
+
+### Limitations of Static Deployment:
+- Mock server features require the backend API
+- Code generation features require the backend API  
+- History and collections are stored locally in browser storage
+- All other HTTP testing features work normally
+
+### Accessing the Static Site:
+Once deployed, the static site will be available at: `https://{username}.github.io/{repository-name}/`
+
 ## 📝 API Endpoints
 
 The web interface uses the following API endpoints:
