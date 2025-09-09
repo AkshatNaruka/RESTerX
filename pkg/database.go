@@ -20,9 +20,9 @@ type User struct {
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
 	
-	// Relationships
-	Workspaces []UserWorkspace `json:"workspaces"`
-	Requests   []RequestHistory `json:"requests"`
+	// Relationships - Use proper GORM associations
+	Workspaces []UserWorkspace   `json:"workspaces" gorm:"foreignKey:UserID"`
+	Requests   []RequestHistory  `json:"requests" gorm:"foreignKey:UserID"`
 }
 
 type WorkspaceDB struct {
@@ -35,10 +35,10 @@ type WorkspaceDB struct {
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
 	
-	// Relationships
-	Members     []UserWorkspace    `json:"members"`
-	Collections []DBCollection     `json:"collections"`
-	Environments []DBEnvironment   `json:"environments"`
+	// Relationships - Use proper GORM associations
+	Members     []UserWorkspace   `json:"members" gorm:"foreignKey:WorkspaceID"`
+	Collections []DBCollection    `json:"collections" gorm:"foreignKey:WorkspaceID"`
+	Environments []DBEnvironment  `json:"environments" gorm:"foreignKey:WorkspaceID"`
 }
 
 type UserWorkspace struct {
@@ -48,9 +48,9 @@ type UserWorkspace struct {
 	Role        string    `json:"role" gorm:"default:member"` // admin, editor, viewer, member
 	JoinedAt    time.Time `json:"joinedAt"`
 	
-	// Relationships
-	User      User        `json:"user"`
-	Workspace WorkspaceDB `json:"workspace"`
+	// Relationships - Use proper GORM associations
+	User      User        `json:"user" gorm:"foreignKey:UserID"`
+	Workspace WorkspaceDB `json:"workspace" gorm:"foreignKey:WorkspaceID"`
 }
 
 type DBCollection struct {
@@ -65,9 +65,9 @@ type DBCollection struct {
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
 	
-	// Relationships
-	Workspace WorkspaceDB     `json:"workspace"`
-	Requests  []DBRequest     `json:"requests"`
+	// Relationships - Use proper GORM associations
+	Workspace WorkspaceDB `json:"workspace" gorm:"foreignKey:WorkspaceID"`
+	Requests  []DBRequest `json:"requests" gorm:"foreignKey:CollectionID"`
 }
 
 type DBRequest struct {
@@ -89,8 +89,8 @@ type DBRequest struct {
 	CreatedAt    time.Time `json:"createdAt"`
 	UpdatedAt    time.Time `json:"updatedAt"`
 	
-	// Relationships
-	Collection DBCollection `json:"collection"`
+	// Relationships - Use proper GORM associations
+	Collection DBCollection `json:"collection" gorm:"foreignKey:CollectionID"`
 }
 
 type DBEnvironment struct {
@@ -103,8 +103,8 @@ type DBEnvironment struct {
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
 	
-	// Relationships
-	Workspace WorkspaceDB `json:"workspace"`
+	// Relationships - Use proper GORM associations
+	Workspace WorkspaceDB `json:"workspace" gorm:"foreignKey:WorkspaceID"`
 }
 
 type RequestHistory struct {
@@ -121,9 +121,9 @@ type RequestHistory struct {
 	Success      bool      `json:"success"`
 	CreatedAt    time.Time `json:"createdAt"`
 	
-	// Relationships
-	User      User        `json:"user"`
-	Workspace WorkspaceDB `json:"workspace"`
+	// Relationships - Use proper GORM associations
+	User      User        `json:"user" gorm:"foreignKey:UserID"`
+	Workspace WorkspaceDB `json:"workspace" gorm:"foreignKey:WorkspaceID"`
 }
 
 type APIMonitor struct {
@@ -141,9 +141,9 @@ type APIMonitor struct {
 	CreatedAt    time.Time `json:"createdAt"`
 	UpdatedAt    time.Time `json:"updatedAt"`
 	
-	// Relationships
-	Workspace WorkspaceDB    `json:"workspace"`
-	Checks    []MonitorCheck `json:"checks"`
+	// Relationships - Use proper GORM associations
+	Workspace WorkspaceDB    `json:"workspace" gorm:"foreignKey:WorkspaceID"`
+	Checks    []MonitorCheck `json:"checks" gorm:"foreignKey:MonitorID"`
 }
 
 type MonitorCheck struct {
@@ -155,8 +155,8 @@ type MonitorCheck struct {
 	Error       string    `json:"error"`
 	CheckedAt   time.Time `json:"checkedAt"`
 	
-	// Relationships
-	Monitor APIMonitor `json:"monitor"`
+	// Relationships - Use proper GORM associations
+	Monitor APIMonitor `json:"monitor" gorm:"foreignKey:MonitorID"`
 }
 
 var DB *gorm.DB
