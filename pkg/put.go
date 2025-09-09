@@ -10,6 +10,11 @@ func HandlePutRequest(url string) {
 	printResponse(response)
 }
 
+// HandlePutRequestAdvanced sends a PUT request with custom headers and body
+func HandlePutRequestAdvanced(url string, headers map[string]string, body string) APIResponse {
+	return MakeHTTPRequest("PUT", url, body, headers)
+}
+
 // MakePutRequest sends a PUT request and returns structured response data
 func MakePutRequest(url, body string, headers map[string]string) APIResponse {
 	return MakeHTTPRequest("PUT", url, body, headers)

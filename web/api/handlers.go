@@ -2,28 +2,152 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
-	"RestCLI/pkg"
+	"strconv"
 	"strings"
+	"RestCLI/pkg"
+	
+	"github.com/gorilla/mux"
+	"github.com/gorilla/websocket"
 )
 
-// Global instances for collections and variables
+// Global instances for enhanced services
 var (
 	collectionManager = pkg.NewCollectionManager()
 	variableResolver  = pkg.NewVariableResolver()
 	codeGenerator     = pkg.NewCodeGenerator()
-	mockServer        = pkg.NewMockServer("3001") // Mock server on port 3001
+	mockServer        = pkg.NewMockServer("3001")
+	authService       = pkg.NewAuthService()
+	workspaceService  = pkg.NewWorkspaceService()
+	testRunner        = pkg.NewTestRunner()
+	monitorService    = pkg.NewMonitorService()
+	
+	upgrader = websocket.Upgrader{
+		CheckOrigin: func(r *http.Request) bool {
+			return true // Allow connections from any origin in development
+		},
+	}
 )
 
-// RequestHandler handles the API request endpoint
-func RequestHandler(w http.ResponseWriter, r *http.Request) {
-	// Enable CORS
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-	
+// Authentication middleware
+func AuthMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Skip auth for OPTIONS requests
+		if r.Method == "OPTIONS" {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		authHeader := r.Header.Get("Authorization")
+		if authHeader == "" {
+			http.Error(w, "Authorization header required", http.StatusUnauthorized)
+			return
+		}
+
+		bearerToken := strings.Split(authHeader, " ")
+		if len(bearerToken) != 2 || bearerToken[0] != "Bearer" {
+			http.Error(w, "Invalid authorization header format", http.StatusUnauthorized)
+			return
+		}
+
+		claims, err := authService.ValidateToken(bearerToken[1])
+		if err != nil {
+			http.Error(w, "Invalid token", http.StatusUnauthorized)
+			return
+		}
+
+		// Add user info to request context
+		r.Header.Set("X-User-ID", fmt.Sprintf("%d", claims.UserID))
+		r.Header.Set("X-Username", claims.Username)
+		r.Header.Set("X-Workspace-ID", fmt.Sprintf("%d", claims.WorkspaceID))
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+// Auth handlers
+func LoginHandler(w http.ResponseWriter, r *http.Request) {
+	setCORSHeaders(w)
 	if r.Method == "OPTIONS" {
-		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	var req pkg.LoginRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	response, err := authService.Login(req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+func RegisterHandler(w http.ResponseWriter, r *http.Request) {
+	setCORSHeaders(w)
+	if r.Method == "OPTIONS" {
+		return
+	}
+
+	var req pkg.RegisterRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	user, err := authService.Register(req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message": "User registered successfully",
+		"user":    user,
+	})
+}
+
+func RefreshTokenHandler(w http.ResponseWriter, r *http.Request) {
+	setCORSHeaders(w)
+	if r.Method == "OPTIONS" {
+		return
+	}
+
+	var req map[string]string
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	refreshToken, ok := req["refreshToken"]
+	if !ok {
+		http.Error(w, "Refresh token required", http.StatusBadRequest)
+		return
+	}
+
+	newToken, err := authService.RefreshToken(refreshToken)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{
+		"token": newToken,
+	})
+}
+
+// Enhanced request handler
+func RequestHandler(w http.ResponseWriter, r *http.Request) {
+	setCORSHeaders(w)
+	if r.Method == "OPTIONS" {
 		return
 	}
 
@@ -31,6 +155,9 @@ func RequestHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
+
+	userID := getUserID(r)
+	workspaceID := getWorkspaceID(r)
 
 	var request pkg.APIRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
@@ -49,26 +176,296 @@ func RequestHandler(w http.ResponseWriter, r *http.Request) {
 	request.URL = variableResolver.ResolveVariables(request.URL, "")
 	request.Body = variableResolver.ResolveVariables(request.Body, "")
 
-	switch request.Method {
+	// Execute request based on method
+	switch strings.ToUpper(request.Method) {
 	case "GET":
-		response = pkg.MakeGetRequest(request.URL)
+		response = pkg.HandleGetRequestAdvanced(request.URL, request.Headers)
 	case "POST":
-		response = pkg.MakePostRequest(request.URL, request.Body, request.Headers)
+		response = pkg.HandlePostRequestAdvanced(request.URL, request.Headers, request.Body)
 	case "PUT":
-		response = pkg.MakePutRequest(request.URL, request.Body, request.Headers)
+		response = pkg.HandlePutRequestAdvanced(request.URL, request.Headers, request.Body)
 	case "PATCH":
-		response = pkg.MakePatchRequest(request.URL, request.Body, request.Headers)
+		response = pkg.HandlePatchRequestAdvanced(request.URL, request.Headers, request.Body)
 	case "DELETE":
-		response = pkg.MakeDeleteRequest(request.URL, request.Headers)
+		response = pkg.HandleDeleteRequestAdvanced(request.URL, request.Headers)
 	case "HEAD":
-		response = pkg.MakeHeadRequest(request.URL, request.Headers)
+		response = pkg.HandleHeadRequestAdvanced(request.URL, request.Headers)
 	default:
 		http.Error(w, "Unsupported HTTP method", http.StatusBadRequest)
 		return
 	}
 
+	// Save to request history
+	history := pkg.RequestHistory{
+		UserID:       userID,
+		WorkspaceID:  workspaceID,
+		Method:       request.Method,
+		URL:          request.URL,
+		Headers:      marshalToJSON(request.Headers),
+		Body:         request.Body,
+		StatusCode:   response.StatusCode,
+		ResponseTime: response.ResponseTime.Milliseconds(),
+		Success:      response.StatusCode >= 200 && response.StatusCode < 400,
+	}
+	pkg.DB.Create(&history)
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+}
+
+// Workspace handlers
+func WorkspacesHandler(w http.ResponseWriter, r *http.Request) {
+	setCORSHeaders(w)
+	if r.Method == "OPTIONS" {
+		return
+	}
+
+	userID := getUserID(r)
+
+	switch r.Method {
+	case "GET":
+		workspaces, err := workspaceService.GetUserWorkspaces(userID)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(workspaces)
+
+	case "POST":
+		var req pkg.CreateWorkspaceRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, "Invalid request body", http.StatusBadRequest)
+			return
+		}
+
+		workspace, err := workspaceService.CreateWorkspace(userID, req)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(workspace)
+	}
+}
+
+func WorkspaceHandler(w http.ResponseWriter, r *http.Request) {
+	setCORSHeaders(w)
+	if r.Method == "OPTIONS" {
+		return
+	}
+
+	vars := mux.Vars(r)
+	workspaceID, err := strconv.ParseUint(vars["id"], 10, 32)
+	if err != nil {
+		http.Error(w, "Invalid workspace ID", http.StatusBadRequest)
+		return
+	}
+
+	userID := getUserID(r)
+
+	switch r.Method {
+	case "GET":
+		// Get workspace details
+		if !workspaceService.HasWorkspaceAccess(userID, uint(workspaceID)) {
+			http.Error(w, "Access denied", http.StatusForbidden)
+			return
+		}
+		
+		var workspace pkg.Workspace
+		if err := pkg.DB.First(&workspace, workspaceID).Error; err != nil {
+			http.Error(w, "Workspace not found", http.StatusNotFound)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(workspace)
+
+	case "PUT":
+		var updates map[string]interface{}
+		if err := json.NewDecoder(r.Body).Decode(&updates); err != nil {
+			http.Error(w, "Invalid request body", http.StatusBadRequest)
+			return
+		}
+
+		if err := workspaceService.UpdateWorkspace(uint(workspaceID), userID, updates); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{"message": "Workspace updated successfully"})
+
+	case "DELETE":
+		if err := workspaceService.DeleteWorkspace(uint(workspaceID), userID); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{"message": "Workspace deleted successfully"})
+	}
+}
+
+// Testing handlers
+func TestSuitesHandler(w http.ResponseWriter, r *http.Request) {
+	setCORSHeaders(w)
+	if r.Method == "OPTIONS" {
+		return
+	}
+
+	switch r.Method {
+	case "GET":
+		// Get all test suites for workspace
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode([]pkg.TestSuite{})
+
+	case "POST":
+		var suite pkg.TestSuite
+		if err := json.NewDecoder(r.Body).Decode(&suite); err != nil {
+			http.Error(w, "Invalid request body", http.StatusBadRequest)
+			return
+		}
+
+		// Save test suite logic would go here
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(suite)
+	}
+}
+
+func RunTestSuiteHandler(w http.ResponseWriter, r *http.Request) {
+	setCORSHeaders(w)
+	if r.Method == "OPTIONS" {
+		return
+	}
+
+	if r.Method != "POST" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var suite pkg.TestSuite
+	if err := json.NewDecoder(r.Body).Decode(&suite); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	// Run test suite
+	result := testRunner.RunTestSuite(suite)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(result)
+}
+
+func LoadTestHandler(w http.ResponseWriter, r *http.Request) {
+	setCORSHeaders(w)
+	if r.Method == "OPTIONS" {
+		return
+	}
+
+	if r.Method != "POST" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var config pkg.LoadTestConfig
+	if err := json.NewDecoder(r.Body).Decode(&config); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	// Run load test
+	result := testRunner.RunLoadTest(config)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(result)
+}
+
+// Monitoring handlers
+func MonitorsHandler(w http.ResponseWriter, r *http.Request) {
+	setCORSHeaders(w)
+	if r.Method == "OPTIONS" {
+		return
+	}
+
+	userID := getUserID(r)
+	workspaceID := getWorkspaceID(r)
+
+	switch r.Method {
+	case "GET":
+		monitors, err := monitorService.GetWorkspaceMonitors(workspaceID, userID)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(monitors)
+
+	case "POST":
+		var monitor pkg.APIMonitor
+		if err := json.NewDecoder(r.Body).Decode(&monitor); err != nil {
+			http.Error(w, "Invalid request body", http.StatusBadRequest)
+			return
+		}
+
+		createdMonitor, err := monitorService.CreateMonitor(workspaceID, userID, monitor)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(createdMonitor)
+	}
+}
+
+func MonitorStatsHandler(w http.ResponseWriter, r *http.Request) {
+	setCORSHeaders(w)
+	if r.Method == "OPTIONS" {
+		return
+	}
+
+	vars := mux.Vars(r)
+	monitorID, err := strconv.ParseUint(vars["id"], 10, 32)
+	if err != nil {
+		http.Error(w, "Invalid monitor ID", http.StatusBadRequest)
+		return
+	}
+
+	userID := getUserID(r)
+
+	stats, err := monitorService.GetMonitorStats(uint(monitorID), userID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(stats)
+}
+
+// WebSocket handler for real-time features
+func WebSocketHandler(w http.ResponseWriter, r *http.Request) {
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		return
+	}
+	defer conn.Close()
+
+	// Handle WebSocket connections for real-time monitoring, collaboration, etc.
+	for {
+		messageType, message, err := conn.ReadMessage()
+		if err != nil {
+			break
+		}
+
+		// Echo message back (placeholder for real-time features)
+		if err := conn.WriteMessage(messageType, message); err != nil {
+			break
+		}
+	}
 }
 
 // CollectionsHandler handles collection-related operations
@@ -279,3 +676,41 @@ func DocumentationHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(doc))
 	}
 }
+
+// Helper functions
+func setCORSHeaders(w http.ResponseWriter) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+}
+
+func getUserID(r *http.Request) uint {
+	userIDStr := r.Header.Get("X-User-ID")
+	userID, _ := strconv.ParseUint(userIDStr, 10, 32)
+	return uint(userID)
+}
+
+func getWorkspaceID(r *http.Request) uint {
+	workspaceIDStr := r.Header.Get("X-Workspace-ID")
+	workspaceID, _ := strconv.ParseUint(workspaceIDStr, 10, 32)
+	return uint(workspaceID)
+}
+
+func marshalToJSON(data interface{}) string {
+	bytes, _ := json.Marshal(data)
+	return string(bytes)
+}
+
+// Placeholder handlers for new features
+func CollectionHandler(w http.ResponseWriter, r *http.Request) { setCORSHeaders(w) }
+func WorkspaceMembersHandler(w http.ResponseWriter, r *http.Request) { setCORSHeaders(w) }
+func InviteUserHandler(w http.ResponseWriter, r *http.Request) { setCORSHeaders(w) }
+func WorkspaceStatsHandler(w http.ResponseWriter, r *http.Request) { setCORSHeaders(w) }
+func UserProfileHandler(w http.ResponseWriter, r *http.Request) { setCORSHeaders(w) }
+func ChangePasswordHandler(w http.ResponseWriter, r *http.Request) { setCORSHeaders(w) }
+func TestSuiteHandler(w http.ResponseWriter, r *http.Request) { setCORSHeaders(w) }
+func MonitorHandler(w http.ResponseWriter, r *http.Request) { setCORSHeaders(w) }
+func UptimeReportHandler(w http.ResponseWriter, r *http.Request) { setCORSHeaders(w) }
+func DashboardHandler(w http.ResponseWriter, r *http.Request) { setCORSHeaders(w) }
+func RequestAnalyticsHandler(w http.ResponseWriter, r *http.Request) { setCORSHeaders(w) }
+func ExportDataHandler(w http.ResponseWriter, r *http.Request) { setCORSHeaders(w) }

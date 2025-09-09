@@ -6,6 +6,11 @@ func HandleDeleteRequest(url string) {
 	printResponse(response)
 }
 
+// HandleDeleteRequestAdvanced sends a DELETE request with custom headers
+func HandleDeleteRequestAdvanced(url string, headers map[string]string) APIResponse {
+	return MakeHTTPRequest("DELETE", url, "", headers)
+}
+
 // MakeDeleteRequest sends a DELETE request and returns structured response data
 func MakeDeleteRequest(url string, headers map[string]string) APIResponse {
 	return MakeHTTPRequest("DELETE", url, "", headers)
