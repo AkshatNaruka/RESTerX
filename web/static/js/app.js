@@ -1,8 +1,18 @@
 class RESTerX {
     constructor() {
-        this.init();
-        this.setupEventListeners();
-        this.loadHistory();
+        this.authToken = localStorage.getItem('resterx-auth-token');
+        this.currentUser = JSON.parse(localStorage.getItem('resterx-user') || 'null');
+        this.currentWorkspace = JSON.parse(localStorage.getItem('resterx-workspace') || 'null');
+        
+        // Check authentication status
+        if (!this.authToken) {
+            this.showAuthModal();
+        } else {
+            this.init();
+            this.setupEventListeners();
+            this.loadHistory();
+            this.showUserBar();
+        }
     }
 
     init() {
@@ -17,6 +27,317 @@ class RESTerX {
         this.loadCollections();
         this.loadEnvironments();
         this.updateAnalytics();
+    }
+
+    // Authentication Methods
+    showAuthModal() {
+        document.getElementById('authModal').style.display = 'flex';
+        this.setupAuthEventListeners();
+    }
+
+    hideAuthModal() {
+        document.getElementById('authModal').style.display = 'none';
+    }
+
+    showUserBar() {
+        if (this.currentUser) {
+            document.getElementById('userBar').style.display = 'flex';
+            document.getElementById('userName').textContent = this.currentUser.fullName || this.currentUser.username;
+        }
+    }
+
+    hideUserBar() {
+        document.getElementById('userBar').style.display = 'none';
+    }
+
+    setupAuthEventListeners() {
+        // Auth tab switching
+        document.querySelectorAll('.auth-tab').forEach(tab => {
+            tab.addEventListener('click', (e) => this.switchAuthTab(e.target.dataset.tab));
+        });
+
+        // Login form
+        document.getElementById('loginBtn').addEventListener('click', () => this.handleLogin());
+        document.getElementById('demoLogin').addEventListener('click', () => this.handleDemoLogin());
+
+        // Register form
+        document.getElementById('registerBtn').addEventListener('click', () => this.handleRegister());
+
+        // Logout
+        document.getElementById('logoutBtn').addEventListener('click', () => this.handleLogout());
+
+        // Enter key handling
+        document.getElementById('loginPassword').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') this.handleLogin();
+        });
+    }
+
+    switchAuthTab(tab) {
+        // Update tab buttons
+        document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+        document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+
+        // Update forms
+        document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+        document.getElementById(`${tab}Form`).classList.add('active');
+
+        // Clear error
+        this.hideAuthError();
+    }
+
+    async handleLogin() {
+        const username = document.getElementById('loginUsername').value;
+        const password = document.getElementById('loginPassword').value;
+
+        if (!username || !password) {
+            this.showAuthError('Please enter both username and password');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ username, password })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                this.handleAuthSuccess(data);
+            } else {
+                const error = await response.text();
+                this.showAuthError(error || 'Login failed');
+            }
+        } catch (error) {
+            this.showAuthError('Network error. Please try again.');
+        }
+    }
+
+    async handleDemoLogin() {
+        // Create demo account if it doesn't exist, then login
+        try {
+            // First try to register demo account
+            await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    username: 'demo',
+                    email: 'demo@resterx.com',
+                    password: 'demo123',
+                    fullName: 'Demo User'
+                })
+            });
+        } catch (error) {
+            // Account might already exist, continue with login
+        }
+
+        // Login with demo credentials
+        document.getElementById('loginUsername').value = 'demo';
+        document.getElementById('loginPassword').value = 'demo123';
+        await this.handleLogin();
+    }
+
+    async handleRegister() {
+        const username = document.getElementById('registerUsername').value;
+        const email = document.getElementById('registerEmail').value;
+        const fullName = document.getElementById('registerFullName').value;
+        const password = document.getElementById('registerPassword').value;
+
+        if (!username || !email || !password) {
+            this.showAuthError('Please fill in all required fields');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ username, email, fullName, password })
+            });
+
+            if (response.ok) {
+                // Switch to login tab and show success message
+                this.switchAuthTab('login');
+                this.showAuthError('Account created successfully! Please log in.', 'success');
+                
+                // Pre-fill login form
+                document.getElementById('loginUsername').value = username;
+            } else {
+                const error = await response.text();
+                this.showAuthError(error || 'Registration failed');
+            }
+        } catch (error) {
+            this.showAuthError('Network error. Please try again.');
+        }
+    }
+
+    handleAuthSuccess(data) {
+        // Store authentication data
+        localStorage.setItem('resterx-auth-token', data.token);
+        localStorage.setItem('resterx-user', JSON.stringify(data.user));
+        if (data.workspaces && data.workspaces.length > 0) {
+            localStorage.setItem('resterx-workspace', JSON.stringify(data.workspaces[0]));
+        }
+
+        this.authToken = data.token;
+        this.currentUser = data.user;
+        this.currentWorkspace = data.workspaces?.[0] || null;
+
+        // Initialize the app
+        this.hideAuthModal();
+        this.showUserBar();
+        this.init();
+        this.setupEventListeners();
+        this.loadHistory();
+
+        // Show success message
+        this.showNotification('Welcome to RESTerX Enterprise! 🚀', 'success');
+    }
+
+    handleLogout() {
+        // Clear authentication data
+        localStorage.removeItem('resterx-auth-token');
+        localStorage.removeItem('resterx-user');
+        localStorage.removeItem('resterx-workspace');
+
+        this.authToken = null;
+        this.currentUser = null;
+        this.currentWorkspace = null;
+
+        // Show auth modal
+        this.hideUserBar();
+        this.showAuthModal();
+    }
+
+    showAuthError(message, type = 'error') {
+        const errorDiv = document.getElementById('authError');
+        errorDiv.textContent = message;
+        errorDiv.style.display = 'block';
+        
+        if (type === 'success') {
+            errorDiv.style.background = 'rgba(40, 167, 69, 0.1)';
+            errorDiv.style.borderColor = '#28a745';
+            errorDiv.style.color = '#28a745';
+        } else {
+            errorDiv.style.background = 'rgba(220, 53, 69, 0.1)';
+            errorDiv.style.borderColor = '#dc3545';
+            errorDiv.style.color = '#dc3545';
+        }
+    }
+
+    hideAuthError() {
+        document.getElementById('authError').style.display = 'none';
+    }
+
+    showNotification(message, type = 'info') {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = `notification notification-${type}`;
+        notification.textContent = message;
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            background: var(--success-color);
+            color: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-medium);
+            z-index: 10001;
+            animation: slideInRight 0.3s ease-out;
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Remove after 3 seconds
+        setTimeout(() => {
+            notification.remove();
+        }, 3000);
+    }
+
+    // Enhanced request method with authentication
+    async sendRequest() {
+        if (!this.authToken) {
+            this.showAuthModal();
+            return;
+        }
+
+        // Get request data
+        const method = document.getElementById('methodSelect').value;
+        const url = document.getElementById('urlInput').value.trim();
+        
+        if (!url) {
+            alert('Please enter a URL');
+            return;
+        }
+
+        // Show loading
+        document.getElementById('loading').style.display = 'flex';
+        
+        // Collect headers
+        const headers = {};
+        document.querySelectorAll('.header-row').forEach(row => {
+            const key = row.querySelector('.header-key').value.trim();
+            const value = row.querySelector('.header-value').value.trim();
+            if (key) {
+                headers[key] = value;
+            }
+        });
+
+        // Get body content
+        let body = '';
+        const bodyType = document.querySelector('input[name="bodyType"]:checked').value;
+        if (bodyType === 'json' || bodyType === 'text') {
+            body = document.getElementById('requestBody').value;
+        } else if (bodyType === 'form') {
+            const formData = {};
+            document.querySelectorAll('.form-row').forEach(row => {
+                const key = row.querySelector('.form-key').value.trim();
+                const value = row.querySelector('.form-value').value.trim();
+                if (key) {
+                    formData[key] = value;
+                }
+            });
+            body = JSON.stringify(formData);
+            headers['Content-Type'] = 'application/json';
+        }
+
+        try {
+            const response = await fetch('/api/request', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.authToken}`
+                },
+                body: JSON.stringify({
+                    method,
+                    url,
+                    headers,
+                    body
+                })
+            });
+
+            if (response.status === 401) {
+                // Token expired
+                this.handleLogout();
+                return;
+            }
+
+            const result = await response.json();
+            this.displayResponse(result);
+            this.addToHistory({ method, url, headers, body }, result);
+            
+        } catch (error) {
+            this.displayError(error.message);
+        } finally {
+            document.getElementById('loading').style.display = 'none';
+        }
     }
 
     setupEventListeners() {

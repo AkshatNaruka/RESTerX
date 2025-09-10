@@ -21,6 +21,11 @@ func HandleHeadRequest(url string) {
 	}
 }
 
+// HandleHeadRequestAdvanced sends a HEAD request with custom headers
+func HandleHeadRequestAdvanced(url string, headers map[string]string) APIResponse {
+	return MakeHTTPRequest("HEAD", url, "", headers)
+}
+
 // MakeHeadRequest sends a HEAD request and returns structured response data
 func MakeHeadRequest(url string, headers map[string]string) APIResponse {
 	return MakeHTTPRequest("HEAD", url, "", headers)
