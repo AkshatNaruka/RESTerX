@@ -4,9 +4,9 @@ class RESTerX {
         this.currentUser = JSON.parse(localStorage.getItem('resterx-user') || 'null');
         this.currentWorkspace = JSON.parse(localStorage.getItem('resterx-workspace') || 'null');
         
-        // Check authentication status
+        // Check authentication status - automatically use demo account for API playground mode
         if (!this.authToken) {
-            this.showAuthModal();
+            this.autoLoginWithDemo();
         } else {
             this.init();
             this.setupEventListeners();
@@ -27,6 +27,56 @@ class RESTerX {
         this.loadCollections();
         this.loadEnvironments();
         this.updateAnalytics();
+    }
+
+    // Auto-login with demo account for API playground mode
+    async autoLoginWithDemo() {
+        // Hide auth modal during auto-login
+        document.getElementById('authModal').style.display = 'none';
+        
+        try {
+            // Create demo account if it doesn't exist
+            await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    username: 'demo',
+                    email: 'demo@resterx.com',
+                    password: 'demo123',
+                    fullName: 'API Playground Demo User'
+                })
+            });
+        } catch (error) {
+            // Account might already exist, continue with login
+        }
+
+        // Login with demo credentials
+        try {
+            const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    username: 'demo',
+                    password: 'demo123'
+                })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                this.handleAuthSuccess(data);
+                console.log('🚀 RESTerX API Playground ready - Demo user logged in automatically');
+            } else {
+                console.error('Demo login failed, falling back to auth modal');
+                this.showAuthModal();
+            }
+        } catch (error) {
+            console.error('Demo login error:', error);
+            this.showAuthModal();
+        }
     }
 
     // Authentication Methods
@@ -639,9 +689,14 @@ class RESTerX {
         this.disableSendButton(true);
 
         try {
+            const requestHeaders = { 'Content-Type': 'application/json' };
+            if (this.authToken) {
+                requestHeaders['Authorization'] = `Bearer ${this.authToken}`;
+            }
+            
             const response = await fetch('/api/request', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: requestHeaders,
                 body: JSON.stringify(request)
             });
 
