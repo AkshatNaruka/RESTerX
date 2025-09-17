@@ -6,6 +6,7 @@
 *.dylib
 restcli
 RESTCLI
+resterx
 
 # Test binary, built with `go test -c`
 *.test
@@ -40,3 +41,8 @@ _site/
 .sass-cache/
 .jekyll-cache/
 .jekyll-metadata
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
