@@ -21,11 +21,23 @@ func StartWebServer(port string) {
 	// Create router with enhanced API endpoints
 	r := mux.NewRouter()
 
-	// Serve static files
-	fs := http.FileServer(http.Dir("web/static/"))
-	r.PathPrefix("/").Handler(fs).Methods("GET")
+	// Apply CORS middleware first
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+			
+			if r.Method == "OPTIONS" {
+				w.WriteHeader(http.StatusOK)
+				return
+			}
+			
+			next.ServeHTTP(w, r)
+		})
+	})
 
-	// API routes with auth middleware
+	// API routes with auth middleware (must be defined before static files)
 	apiRouter := r.PathPrefix("/api").Subrouter()
 	
 	// Public endpoints (no auth required)
@@ -77,21 +89,9 @@ func StartWebServer(port string) {
 	// WebSocket for real-time features
 	protected.HandleFunc("/ws", api.WebSocketHandler)
 
-	// CORS middleware
-	r.Use(func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Access-Control-Allow-Origin", "*")
-			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-			
-			if r.Method == "OPTIONS" {
-				w.WriteHeader(http.StatusOK)
-				return
-			}
-			
-			next.ServeHTTP(w, r)
-		})
-	})
+	// Serve static files (must be after API routes to avoid conflicts)
+	fs := http.FileServer(http.Dir("web/static/"))
+	r.PathPrefix("/").Handler(fs).Methods("GET")
 
 	fmt.Printf("🚀 RESTerX Enterprise Web Server starting on http://localhost:%s\n", port)
 	fmt.Println("📡 Enhanced with authentication, workspaces, monitoring, and testing")
