@@ -3,6 +3,7 @@ class RESTerX {
         this.authToken = localStorage.getItem('resterx-auth-token');
         this.currentUser = JSON.parse(localStorage.getItem('resterx-user') || 'null');
         this.currentWorkspace = JSON.parse(localStorage.getItem('resterx-workspace') || 'null');
+        this.isStaticMode = this.detectStaticMode();
         
         // Check authentication status - automatically use demo account for API playground mode
         if (!this.authToken) {
@@ -13,6 +14,21 @@ class RESTerX {
             this.loadHistory();
             this.showUserBar();
         }
+    }
+
+    // Detect if we're running in static mode (GitHub Pages) without backend
+    detectStaticMode() {
+        // Check if we're on GitHub Pages or likely running without backend
+        const isGitHubPages = window.location.hostname.includes('github.io');
+        const isFileProtocol = window.location.protocol === 'file:';
+        
+        // If we're clearly on GitHub Pages or file protocol, we're in static mode
+        if (isGitHubPages || isFileProtocol) {
+            return true;
+        }
+        
+        // For other cases, we'll detect this at runtime when API calls fail
+        return false;
     }
 
     init() {
@@ -33,6 +49,12 @@ class RESTerX {
     async autoLoginWithDemo() {
         // Hide auth modal during auto-login
         document.getElementById('authModal').style.display = 'none';
+        
+        // In static mode, skip API calls and simulate successful authentication
+        if (this.isStaticMode) {
+            this.handleStaticModeDemo();
+            return;
+        }
         
         try {
             // Create demo account if it doesn't exist
@@ -69,14 +91,46 @@ class RESTerX {
                 const data = await response.json();
                 this.handleAuthSuccess(data);
                 console.log('🚀 RESTerX API Playground ready - Demo user logged in automatically');
+            } else if (response.status === 501 || response.status === 404) {
+                // 501 = Unsupported method (Python HTTP server), 404 = Not found (static mode)
+                console.log('Detected static mode (API not available), enabling demo without backend');
+                this.isStaticMode = true;
+                this.handleStaticModeDemo();
             } else {
                 console.error('Demo login failed, falling back to auth modal');
                 this.showAuthModal();
             }
         } catch (error) {
             console.error('Demo login error:', error);
-            this.showAuthModal();
+            // If we get a network error, we might be in static mode
+            console.log('Detected static mode (network error), enabling demo without backend');
+            this.isStaticMode = true;
+            this.handleStaticModeDemo();
         }
+    }
+
+    // Handle demo authentication in static mode (no backend)
+    handleStaticModeDemo() {
+        // Create fake auth data for static mode
+        const staticDemoData = {
+            token: 'static-demo-token-' + Date.now(),
+            user: {
+                id: 1,
+                username: 'demo',
+                email: 'demo@resterx.com',
+                fullName: 'Demo User (Static Mode)',
+                role: 'user'
+            },
+            workspaces: [{
+                id: 1,
+                name: 'Demo Workspace',
+                description: 'Static mode demo workspace'
+            }]
+        };
+
+        // Simulate successful authentication
+        this.handleAuthSuccess(staticDemoData);
+        console.log('🚀 RESTerX Static Mode - Demo user logged in (no backend required)');
     }
 
     // Authentication Methods
@@ -144,6 +198,13 @@ class RESTerX {
             return;
         }
 
+        // Check if this is demo credentials in static mode
+        if ((this.isStaticMode || username === 'demo') && username === 'demo' && password === 'demo123') {
+            this.isStaticMode = true;
+            this.handleStaticModeDemo();
+            return;
+        }
+
         try {
             const response = await fetch('/api/auth/login', {
                 method: 'POST',
@@ -156,16 +217,34 @@ class RESTerX {
             if (response.ok) {
                 const data = await response.json();
                 this.handleAuthSuccess(data);
+            } else if ((response.status === 501 || response.status === 404) && username === 'demo' && password === 'demo123') {
+                // Static mode detected with demo credentials
+                console.log('Detected static mode during login, enabling demo without backend');
+                this.isStaticMode = true;
+                this.handleStaticModeDemo();
             } else {
                 const error = await response.text();
                 this.showAuthError(error || 'Login failed');
             }
         } catch (error) {
-            this.showAuthError('Network error. Please try again.');
+            if (username === 'demo' && password === 'demo123') {
+                // Network error with demo credentials - enable static mode
+                console.log('Detected static mode during login (network error), enabling demo without backend');
+                this.isStaticMode = true;
+                this.handleStaticModeDemo();
+            } else {
+                this.showAuthError('Network error. Please try again.');
+            }
         }
     }
 
     async handleDemoLogin() {
+        // In static mode, use the static mode demo handler
+        if (this.isStaticMode) {
+            this.handleStaticModeDemo();
+            return;
+        }
+
         // Create demo account if it doesn't exist, then login
         try {
             // First try to register demo account
@@ -689,18 +768,34 @@ class RESTerX {
         this.disableSendButton(true);
 
         try {
-            const requestHeaders = { 'Content-Type': 'application/json' };
-            if (this.authToken) {
-                requestHeaders['Authorization'] = `Bearer ${this.authToken}`;
+            let result;
+            
+            // In static mode, make direct HTTP requests instead of using backend
+            if (this.isStaticMode) {
+                result = await this.makeDirectHttpRequest(request);
+            } else {
+                // Use backend API
+                const requestHeaders = { 'Content-Type': 'application/json' };
+                if (this.authToken) {
+                    requestHeaders['Authorization'] = `Bearer ${this.authToken}`;
+                }
+                
+                const response = await fetch('/api/request', {
+                    method: 'POST',
+                    headers: requestHeaders,
+                    body: JSON.stringify(request)
+                });
+
+                if (!response.ok && (response.status === 501 || response.status === 404)) {
+                    // Backend not available, switch to static mode
+                    console.log('Backend unavailable during request, switching to static mode');
+                    this.isStaticMode = true;
+                    result = await this.makeDirectHttpRequest(request);
+                } else {
+                    result = await response.json();
+                }
             }
             
-            const response = await fetch('/api/request', {
-                method: 'POST',
-                headers: requestHeaders,
-                body: JSON.stringify(request)
-            });
-
-            const result = await response.json();
             this.displayResponse(result);
             this.addToHistory(request, result);
             this.trackAnalytics(request, result);
@@ -709,6 +804,70 @@ class RESTerX {
         } finally {
             this.showLoading(false);
             this.disableSendButton(false);
+        }
+    }
+
+    // Make direct HTTP request in static mode (no backend proxy)
+    async makeDirectHttpRequest(request) {
+        const startTime = Date.now();
+        
+        try {
+            // Prepare fetch options
+            const fetchOptions = {
+                method: request.method,
+                headers: request.headers || {},
+                mode: 'cors', // Enable CORS for cross-origin requests
+            };
+
+            // Add body for methods that support it
+            if (request.method !== 'GET' && request.method !== 'HEAD' && request.body) {
+                fetchOptions.body = request.body;
+            }
+
+            // Make the request
+            const response = await fetch(request.url, fetchOptions);
+            const responseTime = Date.now() - startTime;
+
+            // Get response headers
+            const responseHeaders = {};
+            response.headers.forEach((value, key) => {
+                responseHeaders[key] = value;
+            });
+
+            // Get response body
+            let responseBody;
+            const contentType = response.headers.get('content-type') || '';
+            
+            if (contentType.includes('application/json')) {
+                try {
+                    responseBody = await response.json();
+                    responseBody = JSON.stringify(responseBody, null, 2);
+                } catch (e) {
+                    responseBody = await response.text();
+                }
+            } else {
+                responseBody = await response.text();
+            }
+
+            return {
+                statusCode: response.status,
+                status: response.statusText || 'OK',
+                headers: responseHeaders,
+                body: responseBody,
+                responseTime: responseTime
+            };
+
+        } catch (error) {
+            const responseTime = Date.now() - startTime;
+            
+            return {
+                statusCode: 0,
+                status: 'Error',
+                headers: {},
+                body: `Request failed: ${error.message}`,
+                responseTime: responseTime,
+                error: true
+            };
         }
     }
 
