@@ -398,8 +398,8 @@ class RESTerX {
         }
 
         // Get request data
-        const method = document.getElementById('methodSelect').value;
-        const url = document.getElementById('urlInput').value.trim();
+        const method = document.getElementById('methodSelect_tab1').value;
+        const url = document.getElementById('urlInput_tab1').value.trim();
         
         if (!url) {
             alert('Please enter a URL');
@@ -480,7 +480,7 @@ class RESTerX {
         document.getElementById('templateSelect_tab1').addEventListener('change', (e) => this.loadTemplate(e.target.value));
 
         // Send request
-        document.getElementById('sendBtn').addEventListener('click', () => this.sendRequest());
+        document.getElementById('sendBtn_tab1').addEventListener('click', () => this.sendRequest());
 
         // Tab switching
         document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -528,7 +528,7 @@ class RESTerX {
         document.getElementById('clearHistory').addEventListener('click', () => this.clearHistory());
 
         // URL input enter key
-        document.getElementById('urlInput').addEventListener('keypress', (e) => {
+        document.getElementById('urlInput_tab1').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 this.sendRequest();
             }
