@@ -398,8 +398,8 @@ class RESTerX {
         }
 
         // Get request data
-        const method = document.getElementById('methodSelect').value;
-        const url = document.getElementById('urlInput').value.trim();
+        const method = document.getElementById('methodSelect_tab1').value;
+        const url = document.getElementById('urlInput_tab1').value.trim();
         
         if (!url) {
             alert('Please enter a URL');
@@ -477,10 +477,10 @@ class RESTerX {
         document.getElementById('shortcutsBtn').addEventListener('click', () => this.showShortcutsModal());
 
         // Template selector
-        document.getElementById('templateSelect').addEventListener('change', (e) => this.loadTemplate(e.target.value));
+        document.getElementById('templateSelect_tab1').addEventListener('change', (e) => this.loadTemplate(e.target.value));
 
         // Send request
-        document.getElementById('sendBtn').addEventListener('click', () => this.sendRequest());
+        document.getElementById('sendBtn_tab1').addEventListener('click', () => this.sendRequest());
 
         // Tab switching
         document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -528,7 +528,7 @@ class RESTerX {
         document.getElementById('clearHistory').addEventListener('click', () => this.clearHistory());
 
         // URL input enter key
-        document.getElementById('urlInput').addEventListener('keypress', (e) => {
+        document.getElementById('urlInput_tab1').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 this.sendRequest();
             }
@@ -1720,10 +1720,10 @@ class RESTerX {
         if (!template) return;
 
         // Set method
-        document.getElementById('methodSelect').value = template.method;
+        document.getElementById('methodSelect_tab1').value = template.method;
 
         // Set URL
-        document.getElementById('urlInput').value = template.url;
+        document.getElementById('urlInput_tab1').value = template.url;
 
         // Set headers
         this.clearHeaders();
@@ -1740,14 +1740,14 @@ class RESTerX {
                 document.querySelector('input[name="bodyType"][value="json"]').checked = true;
                 this.handleBodyTypeChange('json');
             }
-            document.getElementById('bodyText').value = template.body;
+            document.getElementById('requestBody').value = template.body;
         }
 
         // Show notification
         this.showNotification(`Template loaded: ${template.description}`, 'success');
 
         // Reset template selector
-        document.getElementById('templateSelect').value = '';
+        document.getElementById('templateSelect_tab1').value = '';
     }
 
     clearHeaders() {
