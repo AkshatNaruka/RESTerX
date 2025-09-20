@@ -1,0 +1,7 @@
+nohup: ignoring input
+2025/09/20 12:06:13 Database initialized successfully
+🚀 RESTerX Enterprise Web Server starting on http://localhost:8080
+📡 Enhanced with authentication, workspaces, monitoring, and testing
+📊 Features: Team collaboration, API monitoring, performance testing, analytics
+🎯 Open your browser and navigate to the URL above
+2025/09/20 12:06:13 listen tcp :8080: bind: address already in use
