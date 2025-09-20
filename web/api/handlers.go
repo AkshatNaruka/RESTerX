@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 	"RestCLI/pkg"
 	
 	"github.com/gorilla/mux"
@@ -14,14 +15,17 @@ import (
 
 // Global instances for enhanced services
 var (
-	collectionManager = pkg.NewCollectionManager()
-	variableResolver  = pkg.NewVariableResolver()
-	codeGenerator     = pkg.NewCodeGenerator()
-	mockServer        = pkg.NewMockServer("3001")
-	authService       = pkg.NewAuthService()
-	workspaceService  = pkg.NewWorkspaceService()
-	testRunner        = pkg.NewTestRunner()
-	monitorService    = pkg.NewMonitorService()
+	collectionManager   = pkg.NewCollectionManager()
+	variableResolver    = pkg.NewVariableResolver()
+	codeGenerator       = pkg.NewCodeGenerator()
+	mockServer          = pkg.NewMockServer("3001")
+	authService         = pkg.NewAuthService()
+	workspaceService    = pkg.NewWorkspaceService()
+	testRunner          = pkg.NewTestRunner()
+	monitorService      = pkg.NewMonitorService()
+	importExportService = pkg.NewImportExportService()
+	graphqlService      = pkg.NewGraphQLService()
+	responseVisualizer  = pkg.NewResponseVisualizer()
 	
 	upgrader = websocket.Upgrader{
 		CheckOrigin: func(r *http.Request) bool {
@@ -714,3 +718,312 @@ func UptimeReportHandler(w http.ResponseWriter, r *http.Request) { setCORSHeader
 func DashboardHandler(w http.ResponseWriter, r *http.Request) { setCORSHeaders(w) }
 func RequestAnalyticsHandler(w http.ResponseWriter, r *http.Request) { setCORSHeaders(w) }
 func ExportDataHandler(w http.ResponseWriter, r *http.Request) { setCORSHeaders(w) }
+
+// Import/Export Handlers
+
+// ImportCollectionHandler handles importing collections from various formats
+func ImportCollectionHandler(w http.ResponseWriter, r *http.Request) {
+	setCORSHeaders(w)
+	if r.Method == "OPTIONS" {
+		return
+	}
+
+	if r.Method != "POST" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		Format string `json:"format"` // postman, openapi, curl
+		Data   string `json:"data"`   // The data to import
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid JSON request", http.StatusBadRequest)
+		return
+	}
+
+	var collection *pkg.Collection
+	var err error
+
+	switch strings.ToLower(req.Format) {
+	case "postman":
+		collection, err = importExportService.ImportPostmanCollection([]byte(req.Data))
+	case "openapi":
+		collection, err = importExportService.ImportFromOpenAPI([]byte(req.Data))
+	case "curl":
+		// For cURL, import as single request collection
+		apiRequest, curlErr := importExportService.ImportFromCURL(req.Data)
+		if curlErr != nil {
+			err = curlErr
+		} else {
+			savedRequest := pkg.SavedRequest{
+				ID:        fmt.Sprintf("curl_%d", time.Now().Unix()),
+				Name:      "Imported from cURL",
+				Method:    apiRequest.Method,
+				URL:       apiRequest.URL,
+				Headers:   apiRequest.Headers,
+				Body:      apiRequest.Body,
+				CreatedAt: time.Now(),
+			}
+			collection = &pkg.Collection{
+				ID:          fmt.Sprintf("collection_%d", time.Now().Unix()),
+				Name:        "Imported from cURL",
+				Description: "Collection imported from cURL command",
+				Variables:   make(map[string]string),
+				Requests:    []pkg.SavedRequest{savedRequest},
+				CreatedAt:   time.Now(),
+			}
+		}
+	default:
+		http.Error(w, "Unsupported format", http.StatusBadRequest)
+		return
+	}
+
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Import failed: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(collection)
+}
+
+// ExportCollectionHandler handles exporting collections to various formats
+func ExportCollectionHandler(w http.ResponseWriter, r *http.Request) {
+	setCORSHeaders(w)
+	if r.Method == "OPTIONS" {
+		return
+	}
+
+	if r.Method != "POST" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		Format     string          `json:"format"`     // postman, openapi
+		Collection *pkg.Collection `json:"collection"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid JSON request", http.StatusBadRequest)
+		return
+	}
+
+	var result interface{}
+	var err error
+
+	switch strings.ToLower(req.Format) {
+	case "postman":
+		result, err = importExportService.ExportToPostmanCollection(req.Collection)
+	default:
+		http.Error(w, "Unsupported export format", http.StatusBadRequest)
+		return
+	}
+
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Export failed: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(result)
+}
+
+// GraphQL Handlers
+
+// GraphQLHandler handles GraphQL query execution
+func GraphQLHandler(w http.ResponseWriter, r *http.Request) {
+	setCORSHeaders(w)
+	if r.Method == "OPTIONS" {
+		return
+	}
+
+	if r.Method != "POST" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		Endpoint string                 `json:"endpoint"`
+		Query    string                 `json:"query"`
+		Variables map[string]interface{} `json:"variables"`
+		Headers   map[string]string      `json:"headers"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid JSON request", http.StatusBadRequest)
+		return
+	}
+
+	gqlRequest := pkg.GraphQLRequest{
+		Query:     req.Query,
+		Variables: req.Variables,
+	}
+
+	response, err := graphqlService.ExecuteGraphQLQuery(req.Endpoint, gqlRequest, req.Headers)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("GraphQL execution failed: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+// GraphQLIntrospectionHandler handles GraphQL schema introspection
+func GraphQLIntrospectionHandler(w http.ResponseWriter, r *http.Request) {
+	setCORSHeaders(w)
+	if r.Method == "OPTIONS" {
+		return
+	}
+
+	if r.Method != "POST" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		Endpoint string            `json:"endpoint"`
+		Headers  map[string]string `json:"headers"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid JSON request", http.StatusBadRequest)
+		return
+	}
+
+	introspection, err := graphqlService.IntrospectSchema(req.Endpoint, req.Headers)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Introspection failed: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(introspection)
+}
+
+// GraphQLValidateHandler validates GraphQL queries
+func GraphQLValidateHandler(w http.ResponseWriter, r *http.Request) {
+	setCORSHeaders(w)
+	if r.Method == "OPTIONS" {
+		return
+	}
+
+	if r.Method != "POST" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		Query string `json:"query"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid JSON request", http.StatusBadRequest)
+		return
+	}
+
+	errors := graphqlService.ValidateGraphQLQuery(req.Query)
+	
+	response := map[string]interface{}{
+		"valid":  len(errors) == 0,
+		"errors": errors,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+// Response Analysis Handlers
+
+// AnalyzeResponseHandler provides detailed response analysis
+func AnalyzeResponseHandler(w http.ResponseWriter, r *http.Request) {
+	setCORSHeaders(w)
+	if r.Method == "OPTIONS" {
+		return
+	}
+
+	if r.Method != "POST" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var response pkg.APIResponse
+	if err := json.NewDecoder(r.Body).Decode(&response); err != nil {
+		http.Error(w, "Invalid JSON request", http.StatusBadRequest)
+		return
+	}
+
+	analysis := responseVisualizer.AnalyzeResponse(&response)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(analysis)
+}
+
+// CompareResponsesHandler compares two API responses
+func CompareResponsesHandler(w http.ResponseWriter, r *http.Request) {
+	setCORSHeaders(w)
+	if r.Method == "OPTIONS" {
+		return
+	}
+
+	if r.Method != "POST" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		Response1 pkg.APIResponse `json:"response1"`
+		Response2 pkg.APIResponse `json:"response2"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid JSON request", http.StatusBadRequest)
+		return
+	}
+
+	comparison := responseVisualizer.CompareResponses(&req.Response1, &req.Response2)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(comparison)
+}
+
+// FormatResponseHandler formats response based on content type
+func FormatResponseHandler(w http.ResponseWriter, r *http.Request) {
+	setCORSHeaders(w)
+	if r.Method == "OPTIONS" {
+		return
+	}
+
+	if r.Method != "POST" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		Body        string `json:"body"`
+		ContentType string `json:"contentType"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid JSON request", http.StatusBadRequest)
+		return
+	}
+
+	var formatted string
+	var err error
+
+	if strings.Contains(strings.ToLower(req.ContentType), "application/json") {
+		formatted, err = responseVisualizer.FormatJSONResponse(req.Body)
+	} else {
+		formatted = req.Body // Return as-is for other types
+	}
+
+	response := map[string]interface{}{
+		"formatted": formatted,
+		"error":     nil,
+	}
+
+	if err != nil {
+		response["error"] = err.Error()
+		response["formatted"] = req.Body // Return original on error
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}

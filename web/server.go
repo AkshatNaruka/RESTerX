@@ -86,6 +86,20 @@ func StartWebServer(port string) {
 	protected.HandleFunc("/analytics/requests", api.RequestAnalyticsHandler).Methods("GET", "OPTIONS")
 	protected.HandleFunc("/analytics/export", api.ExportDataHandler).Methods("GET", "OPTIONS")
 	
+	// Import/Export system
+	protected.HandleFunc("/import/collection", api.ImportCollectionHandler).Methods("POST", "OPTIONS")
+	protected.HandleFunc("/export/collection", api.ExportCollectionHandler).Methods("POST", "OPTIONS")
+	
+	// GraphQL support
+	protected.HandleFunc("/graphql/execute", api.GraphQLHandler).Methods("POST", "OPTIONS")
+	protected.HandleFunc("/graphql/introspect", api.GraphQLIntrospectionHandler).Methods("POST", "OPTIONS")
+	protected.HandleFunc("/graphql/validate", api.GraphQLValidateHandler).Methods("POST", "OPTIONS")
+	
+	// Response analysis
+	protected.HandleFunc("/analyze/response", api.AnalyzeResponseHandler).Methods("POST", "OPTIONS")
+	protected.HandleFunc("/analyze/compare", api.CompareResponsesHandler).Methods("POST", "OPTIONS")
+	protected.HandleFunc("/format/response", api.FormatResponseHandler).Methods("POST", "OPTIONS")
+	
 	// WebSocket for real-time features
 	protected.HandleFunc("/ws", api.WebSocketHandler)
 
@@ -96,6 +110,7 @@ func StartWebServer(port string) {
 	fmt.Printf("🚀 RESTerX Enterprise Web Server starting on http://localhost:%s\n", port)
 	fmt.Println("📡 Enhanced with authentication, workspaces, monitoring, and testing")
 	fmt.Println("📊 Features: Team collaboration, API monitoring, performance testing, analytics")
+	fmt.Println("🔧 New: GraphQL support, Import/Export (Postman/OpenAPI), Response Analysis")
 	fmt.Println("🎯 Open your browser and navigate to the URL above")
 	
 	log.Fatal(http.ListenAndServe(":"+port, r))

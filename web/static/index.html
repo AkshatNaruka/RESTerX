@@ -90,6 +90,12 @@
                 <button id="manageEnv" class="env-btn">
                     <span>⚙️</span>Manage Environments
                 </button>
+                <button id="importBtn" class="import-btn" title="Import Collection">
+                    <span>📥</span>Import
+                </button>
+                <button id="exportBtn" class="export-btn" title="Export Collection">
+                    <span>📤</span>Export
+                </button>
                 <button id="shortcutsBtn" class="shortcuts-btn" title="View Keyboard Shortcuts (?)">
                     <span>⌨️</span>
                 </button>
@@ -98,36 +104,78 @@
         </header>
 
         <main class="main">
-            <div class="request-section">
-                <div class="request-controls">
-                    <div class="templates-section">
-                        <label for="templateSelect" class="template-label">
-                            <span class="template-icon">🚀</span>Quick Templates:
-                        </label>
-                        <select id="templateSelect" class="template-select">
-                            <option value="">Select a template...</option>
-                            <option value="jsonplaceholder-posts">JSONPlaceholder - Posts</option>
-                            <option value="jsonplaceholder-users">JSONPlaceholder - Users</option>
-                            <option value="httpbin-get">HTTPBin - GET Test</option>
-                            <option value="httpbin-post">HTTPBin - POST Test</option>
-                            <option value="github-api">GitHub API - User Info</option>
-                            <option value="rest-countries">REST Countries API</option>
-                        </select>
+            <!-- Request Tabs -->
+            <div class="request-tabs-container">
+                <div class="request-tabs">
+                    <div class="tab-item active" data-tab-id="tab1">
+                        <span class="tab-title">Request 1</span>
+                        <span class="tab-close" onclick="closeRequestTab('tab1')">×</span>
                     </div>
+                    <button class="add-tab-btn" onclick="addNewRequestTab()">+</button>
                 </div>
-                
-                <div class="request-line">
-                    <select id="methodSelect" class="method-select">
-                        <option value="GET">GET</option>
-                        <option value="POST">POST</option>
-                        <option value="PUT">PUT</option>
-                        <option value="PATCH">PATCH</option>
-                        <option value="DELETE">DELETE</option>
-                        <option value="HEAD">HEAD</option>
-                    </select>
-                    <input type="url" id="urlInput" placeholder="Enter request URL (e.g., https://jsonplaceholder.typicode.com/posts/1)" class="url-input">
-                    <button id="sendBtn" class="send-btn">Send</button>
-                </div>
+            </div>
+
+            <!-- Request Tab Content -->
+            <div class="request-tab-content" id="tab1" style="display: block;">
+                <div class="request-section">
+                    <div class="request-controls">
+                        <div class="request-type-selector">
+                            <label><input type="radio" name="requestType_tab1" value="http" checked> HTTP</label>
+                            <label><input type="radio" name="requestType_tab1" value="graphql"> GraphQL</label>
+                        </div>
+                        <div class="templates-section">
+                            <label for="templateSelect_tab1" class="template-label">
+                                <span class="template-icon">🚀</span>Quick Templates:
+                            </label>
+                            <select id="templateSelect_tab1" class="template-select">
+                                <option value="">Select a template...</option>
+                                <option value="jsonplaceholder-posts">JSONPlaceholder - Posts</option>
+                                <option value="jsonplaceholder-users">JSONPlaceholder - Users</option>
+                                <option value="httpbin-get">HTTPBin - GET Test</option>
+                                <option value="httpbin-post">HTTPBin - POST Test</option>
+                                <option value="github-api">GitHub API - User Info</option>
+                                <option value="rest-countries">REST Countries API</option>
+                                <option value="graphql-sample">GraphQL Sample Query</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- HTTP Request Interface -->
+                    <div class="http-request-interface">
+                        <div class="request-line">
+                            <select id="methodSelect_tab1" class="method-select">
+                                <option value="GET">GET</option>
+                                <option value="POST">POST</option>
+                                <option value="PUT">PUT</option>
+                                <option value="PATCH">PATCH</option>
+                                <option value="DELETE">DELETE</option>
+                                <option value="HEAD">HEAD</option>
+                            </select>
+                            <input type="url" id="urlInput_tab1" placeholder="Enter request URL (e.g., https://jsonplaceholder.typicode.com/posts/1)" class="url-input">
+                            <button id="sendBtn_tab1" class="send-btn">Send</button>
+                        </div>
+                    </div>
+
+                    <!-- GraphQL Request Interface -->
+                    <div class="graphql-request-interface" style="display: none;">
+                        <div class="request-line">
+                            <input type="url" id="graphqlEndpoint_tab1" placeholder="GraphQL endpoint URL (e.g., https://api.github.com/graphql)" class="url-input">
+                            <button id="introspectBtn_tab1" class="introspect-btn" title="Introspect Schema">🔍</button>
+                            <button id="sendGraphQLBtn_tab1" class="send-btn">Execute</button>
+                        </div>
+                        <div class="graphql-query-container">
+                            <textarea id="graphqlQuery_tab1" class="graphql-textarea" placeholder="Enter your GraphQL query here...
+
+query {
+  # Your query here
+}"></textarea>
+                            <div class="graphql-helpers">
+                                <button id="validateGraphQLBtn_tab1" class="validate-btn">Validate Query</button>
+                                <button id="formatGraphQLBtn_tab1" class="format-btn">Format</button>
+                                <button id="sampleGraphQLBtn_tab1" class="sample-btn">Sample Query</button>
+                            </div>
+                        </div>
+                    </div>
 
                 <div class="tabs">
                     <button class="tab-btn active" data-tab="headers">
@@ -141,6 +189,9 @@
                     </button>
                     <button class="tab-btn" data-tab="variables">
                         <span class="tab-icon">🔧</span>Variables
+                    </button>
+                    <button class="tab-btn" data-tab="graphql-vars" style="display: none;">
+                        <span class="tab-icon">🔗</span>GraphQL Variables
                     </button>
                     <button class="tab-btn" data-tab="tests">
                         <span class="tab-icon">🧪</span>Tests
@@ -210,6 +261,18 @@
                         <button id="addVariable" class="add-btn">+ Add Variable</button>
                     </div>
 
+                    <div id="graphql-vars" class="tab-pane">
+                        <div class="graphql-vars-help">
+                            <p>Define GraphQL variables in JSON format</p>
+                            <p>These variables will be passed to your GraphQL query</p>
+                        </div>
+                        <textarea id="graphqlVariables" class="graphql-vars-textarea" placeholder='{
+  "userId": 1,
+  "limit": 10
+}'></textarea>
+                        <button id="validateGraphQLVarsBtn" class="validate-btn">Validate JSON</button>
+                    </div>
+
                     <div id="tests" class="tab-pane">
                         <div class="test-help">
                             <p>Add test scripts to validate responses automatically</p>
@@ -253,6 +316,7 @@
                     </div>
                 </div>
             </div>
+        </div> <!-- End of request-tab-content -->
 
             <div class="response-section">
                 <div class="response-header">
@@ -293,6 +357,9 @@
                     <button class="response-tab-btn" data-tab="response-headers">
                         <span class="tab-icon">📋</span>Headers
                     </button>
+                    <button class="response-tab-btn" data-tab="analysis">
+                        <span class="tab-icon">📊</span>Analysis
+                    </button>
                     <button class="response-tab-btn" data-tab="code-gen">
                         <span class="tab-icon">💻</span>Code
                     </button>
@@ -311,6 +378,36 @@
                     </div>
                     <div id="response-headers" class="response-tab-pane">
                         <pre id="responseHeaders" class="response-text">Response headers will appear here</pre>
+                    </div>
+                    <div id="analysis" class="response-tab-pane">
+                        <div class="analysis-controls">
+                            <button id="analyzeResponse" class="analyze-btn">📊 Analyze Response</button>
+                            <button id="compareResponses" class="compare-btn">🔍 Compare with Previous</button>
+                            <button id="viewDetailedAnalysis" class="detailed-btn">📈 Detailed Analysis</button>
+                        </div>
+                        <div id="quickAnalysis" class="quick-analysis">
+                            <div class="analysis-grid">
+                                <div class="analysis-item">
+                                    <div class="analysis-label">Content Type</div>
+                                    <div id="analysisContentType" class="analysis-value">-</div>
+                                </div>
+                                <div class="analysis-item">
+                                    <div class="analysis-label">Response Size</div>
+                                    <div id="analysisSize" class="analysis-value">-</div>
+                                </div>
+                                <div class="analysis-item">
+                                    <div class="analysis-label">Performance Score</div>
+                                    <div id="analysisScore" class="analysis-value">-</div>
+                                </div>
+                                <div class="analysis-item">
+                                    <div class="analysis-label">Data Structure</div>
+                                    <div id="analysisStructure" class="analysis-value">-</div>
+                                </div>
+                            </div>
+                            <div id="analysisSummary" class="analysis-summary">
+                                <p>Click "Analyze Response" to get detailed insights about the API response</p>
+                            </div>
+                        </div>
                     </div>
                     <div id="code-gen" class="response-tab-pane">
                         <div class="code-gen-controls">
@@ -467,6 +564,93 @@
                             <span>Close Modal</span>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Collection Modal -->
+    <div id="importModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📥 Import Collection</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="import-options">
+                    <h4>Import Format</h4>
+                    <div class="format-selector">
+                        <label><input type="radio" name="importFormat" value="postman" checked> Postman Collection (v2.1)</label>
+                        <label><input type="radio" name="importFormat" value="openapi"> OpenAPI/Swagger (JSON)</label>
+                        <label><input type="radio" name="importFormat" value="curl"> cURL Command</label>
+                    </div>
+                </div>
+                <div class="import-input">
+                    <h4>Data to Import</h4>
+                    <textarea id="importData" placeholder="Paste your collection JSON, OpenAPI spec, or cURL command here..." class="import-textarea"></textarea>
+                    <div class="import-file-option">
+                        <input type="file" id="importFile" accept=".json,.txt" style="display: none;">
+                        <button id="chooseFileBtn" class="file-btn">📁 Choose File</button>
+                        <span id="fileName" class="file-name">No file selected</span>
+                    </div>
+                </div>
+                <div class="import-actions">
+                    <button id="previewImport" class="preview-btn">Preview</button>
+                    <button id="executeImport" class="import-btn">Import Collection</button>
+                </div>
+                <div id="importPreview" class="import-preview" style="display: none;">
+                    <h4>Preview</h4>
+                    <div id="previewContent" class="preview-content"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Collection Modal -->
+    <div id="exportModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📤 Export Collection</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="export-options">
+                    <h4>Select Collection to Export</h4>
+                    <select id="exportCollectionSelect" class="collection-select">
+                        <option value="">Select a collection...</option>
+                    </select>
+                </div>
+                <div class="export-format">
+                    <h4>Export Format</h4>
+                    <div class="format-selector">
+                        <label><input type="radio" name="exportFormat" value="postman" checked> Postman Collection (v2.1)</label>
+                        <label><input type="radio" name="exportFormat" value="openapi"> OpenAPI 3.0 Specification</label>
+                        <label><input type="radio" name="exportFormat" value="json"> RESTerX JSON Format</label>
+                    </div>
+                </div>
+                <div class="export-actions">
+                    <button id="generateExport" class="generate-btn">Generate Export</button>
+                    <button id="downloadExport" class="download-btn" style="display: none;">📥 Download</button>
+                    <button id="copyExport" class="copy-btn" style="display: none;">📋 Copy to Clipboard</button>
+                </div>
+                <div id="exportPreview" class="export-preview" style="display: none;">
+                    <h4>Generated Export</h4>
+                    <textarea id="exportData" class="export-textarea" readonly></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Response Analysis Modal -->
+    <div id="analysisModal" class="modal" style="display: none;">
+        <div class="modal-content analysis-modal">
+            <div class="modal-header">
+                <h3>📊 Response Analysis</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="analysisContent" class="analysis-content">
+                    <p>Send a request to see detailed analysis</p>
                 </div>
             </div>
         </div>
