@@ -100,6 +100,23 @@ func StartWebServer(port string) {
 	protected.HandleFunc("/analyze/compare", api.CompareResponsesHandler).Methods("POST", "OPTIONS")
 	protected.HandleFunc("/format/response", api.FormatResponseHandler).Methods("POST", "OPTIONS")
 	
+	// Scripting
+	protected.HandleFunc("/scripts/execute", api.ExecuteScriptHandler).Methods("POST", "OPTIONS")
+	protected.HandleFunc("/scripts/validate", api.ValidateScriptHandler).Methods("POST", "OPTIONS")
+	protected.HandleFunc("/scripts/examples", api.GetScriptExamplesHandler).Methods("GET", "OPTIONS")
+	
+	// Sharing
+	protected.HandleFunc("/share", api.CreateShareHandler).Methods("POST", "OPTIONS")
+	protected.HandleFunc("/share/{id}", api.GetShareHandler).Methods("GET", "OPTIONS")
+	protected.HandleFunc("/share/user/list", api.ListUserSharesHandler).Methods("GET", "OPTIONS")
+	
+	// WebSocket testing
+	protected.HandleFunc("/websocket/connect", api.WebSocketConnectHandler).Methods("POST", "OPTIONS")
+	protected.HandleFunc("/websocket/send", api.WebSocketSendHandler).Methods("POST", "OPTIONS")
+	protected.HandleFunc("/websocket/connection/{id}", api.WebSocketConnectionHandler).Methods("GET", "OPTIONS")
+	protected.HandleFunc("/websocket/connection/{id}/close", api.WebSocketCloseHandler).Methods("DELETE", "OPTIONS")
+	protected.HandleFunc("/websocket/test", api.WebSocketTestHandler).Methods("POST", "OPTIONS")
+	
 	// WebSocket for real-time features
 	protected.HandleFunc("/ws", api.WebSocketHandler)
 

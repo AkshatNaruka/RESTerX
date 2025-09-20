@@ -26,6 +26,9 @@ var (
 	importExportService = pkg.NewImportExportService()
 	graphqlService      = pkg.NewGraphQLService()
 	responseVisualizer  = pkg.NewResponseVisualizer()
+	scriptingEngine     = pkg.NewScriptingEngine()
+	sharingService      = pkg.NewSharingService()
+	websocketService    = pkg.NewWebSocketService()
 	
 	upgrader = websocket.Upgrader{
 		CheckOrigin: func(r *http.Request) bool {
@@ -1026,4 +1029,327 @@ func FormatResponseHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+}
+
+// Scripting Handlers
+
+// ExecuteScriptHandler executes pre-request or post-request scripts
+func ExecuteScriptHandler(w http.ResponseWriter, r *http.Request) {
+	setCORSHeaders(w)
+	if r.Method == "OPTIONS" {
+		return
+	}
+
+	if r.Method != "POST" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		Script  string            `json:"script"`
+		Type    string            `json:"type"` // "pre-request" or "post-request"
+		Context pkg.ScriptContext `json:"context"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid JSON request", http.StatusBadRequest)
+		return
+	}
+
+	var result *pkg.ScriptResult
+	if req.Type == "pre-request" {
+		result = scriptingEngine.ExecutePreRequestScript(req.Script, &req.Context)
+	} else {
+		result = scriptingEngine.ExecutePostRequestScript(req.Script, &req.Context)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(result)
+}
+
+// ValidateScriptHandler validates script syntax
+func ValidateScriptHandler(w http.ResponseWriter, r *http.Request) {
+	setCORSHeaders(w)
+	if r.Method == "OPTIONS" {
+		return
+	}
+
+	if r.Method != "POST" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		Script string `json:"script"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid JSON request", http.StatusBadRequest)
+		return
+	}
+
+	errors := scriptingEngine.ValidateScript(req.Script)
+
+	response := map[string]interface{}{
+		"valid":  len(errors) == 0,
+		"errors": errors,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+// GetScriptExamplesHandler returns script examples
+func GetScriptExamplesHandler(w http.ResponseWriter, r *http.Request) {
+	setCORSHeaders(w)
+	if r.Method == "OPTIONS" {
+		return
+	}
+
+	if r.Method != "GET" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	examples := scriptingEngine.GetScriptExamples()
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(examples)
+}
+
+// Sharing Handlers
+
+// CreateShareHandler creates a new shared item
+func CreateShareHandler(w http.ResponseWriter, r *http.Request) {
+	setCORSHeaders(w)
+	if r.Method == "OPTIONS" {
+		return
+	}
+
+	if r.Method != "POST" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	userID := getUserID(r)
+	if userID == 0 {
+		http.Error(w, "Authentication required", http.StatusUnauthorized)
+		return
+	}
+
+	var req pkg.ShareRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid JSON request", http.StatusBadRequest)
+		return
+	}
+
+	response, err := sharingService.CreateShare(&req, fmt.Sprintf("user_%d", userID))
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Share creation failed: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+// GetShareHandler retrieves a shared item
+func GetShareHandler(w http.ResponseWriter, r *http.Request) {
+	setCORSHeaders(w)
+	if r.Method == "OPTIONS" {
+		return
+	}
+
+	if r.Method != "GET" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	vars := mux.Vars(r)
+	shareID := vars["id"]
+	password := r.URL.Query().Get("password")
+
+	sharedItem, err := sharingService.GetShare(shareID, password)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(sharedItem)
+}
+
+// ListUserSharesHandler lists user's shared items
+func ListUserSharesHandler(w http.ResponseWriter, r *http.Request) {
+	setCORSHeaders(w)
+	if r.Method == "OPTIONS" {
+		return
+	}
+
+	if r.Method != "GET" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	userID := getUserID(r)
+	if userID == 0 {
+		http.Error(w, "Authentication required", http.StatusUnauthorized)
+		return
+	}
+
+	shares := sharingService.ListUserShares(fmt.Sprintf("user_%d", userID))
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(shares)
+}
+
+// WebSocket Handlers
+
+// WebSocketConnectHandler handles WebSocket connection requests
+func WebSocketConnectHandler(w http.ResponseWriter, r *http.Request) {
+	setCORSHeaders(w)
+	if r.Method == "OPTIONS" {
+		return
+	}
+
+	if r.Method != "POST" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req pkg.WebSocketRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid JSON request", http.StatusBadRequest)
+		return
+	}
+
+	connection, err := websocketService.Connect(&req)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("WebSocket connection failed: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(connection)
+}
+
+// WebSocketSendHandler sends a message through WebSocket
+func WebSocketSendHandler(w http.ResponseWriter, r *http.Request) {
+	setCORSHeaders(w)
+	if r.Method == "OPTIONS" {
+		return
+	}
+
+	if r.Method != "POST" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		ConnectionID string `json:"connectionId"`
+		Message      string `json:"message"`
+		MessageType  string `json:"messageType"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid JSON request", http.StatusBadRequest)
+		return
+	}
+
+	err := websocketService.SendMessage(req.ConnectionID, req.Message, req.MessageType)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Send message failed: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	response := map[string]interface{}{
+		"success": true,
+		"message": "Message sent successfully",
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+// WebSocketConnectionHandler gets connection details
+func WebSocketConnectionHandler(w http.ResponseWriter, r *http.Request) {
+	setCORSHeaders(w)
+	if r.Method == "OPTIONS" {
+		return
+	}
+
+	if r.Method != "GET" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	vars := mux.Vars(r)
+	connID := vars["id"]
+
+	connection, err := websocketService.GetConnection(connID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(connection)
+}
+
+// WebSocketCloseHandler closes a WebSocket connection
+func WebSocketCloseHandler(w http.ResponseWriter, r *http.Request) {
+	setCORSHeaders(w)
+	if r.Method == "OPTIONS" {
+		return
+	}
+
+	if r.Method != "DELETE" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	vars := mux.Vars(r)
+	connID := vars["id"]
+
+	err := websocketService.CloseConnection(connID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	response := map[string]interface{}{
+		"success": true,
+		"message": "Connection closed successfully",
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+// WebSocketTestHandler tests WebSocket endpoint
+func WebSocketTestHandler(w http.ResponseWriter, r *http.Request) {
+	setCORSHeaders(w)
+	if r.Method == "OPTIONS" {
+		return
+	}
+
+	if r.Method != "POST" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		URL     string        `json:"url"`
+		Timeout time.Duration `json:"timeout"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid JSON request", http.StatusBadRequest)
+		return
+	}
+
+	if req.Timeout == 0 {
+		req.Timeout = 10 * time.Second
+	}
+
+	result := websocketService.TestWebSocketEndpoint(req.URL, req.Timeout)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(result)
 }
