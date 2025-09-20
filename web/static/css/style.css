@@ -1,14 +1,14 @@
 :root {
-    --primary-color: #ff6b35;
-    --primary-hover: #e55a2b;
+    --primary-color: #0066cc;
+    --primary-hover: #0052a3;
     --secondary-color: #004e89;
     --secondary-hover: #003d75;
     --success-color: #28a745;
     --success-hover: #218838;
     --error-color: #dc3545;
     --error-hover: #c82333;
-    --warning-color: #ffc107;
-    --warning-hover: #e0a800;
+    --warning-color: #f0ad4e;
+    --warning-hover: #ec971f;
     --info-color: #17a2b8;
     --info-hover: #138496;
     
@@ -682,7 +682,7 @@ body {
 }
 
 .status-4xx {
-    background: linear-gradient(135deg, var(--warning-color), #e0a800);
+    background: linear-gradient(135deg, var(--warning-color), var(--warning-hover));
     color: #212529;
     border-color: var(--warning-color);
 }
