@@ -592,6 +592,11 @@ class RESTerX {
         document.getElementById('saveSettings').addEventListener('click', () => this.saveSettings());
         document.getElementById('resetSettings').addEventListener('click', () => this.resetSettings());
 
+        // History search and filtering
+        document.getElementById('historySearch').addEventListener('input', (e) => this.filterHistory());
+        document.getElementById('methodFilter').addEventListener('change', (e) => this.filterHistory());
+        document.getElementById('statusFilter').addEventListener('change', (e) => this.filterHistory());
+
         // Mobile sidebar functionality
         document.getElementById('mobileSidebarToggle').addEventListener('click', () => this.toggleMobileSidebar());
         document.getElementById('mobileOverlay').addEventListener('click', () => this.closeMobileSidebar());
@@ -1626,6 +1631,51 @@ class RESTerX {
             return;
         }
 
+        // Enhanced keyboard shortcuts for better productivity
+        
+        // Enter: Send request (when URL field is focused)
+        if (e.key === 'Enter' && document.activeElement === document.getElementById('urlInput')) {
+            e.preventDefault();
+            this.sendRequest();
+            return;
+        }
+
+        // Ctrl+Enter: Send request from anywhere
+        if (e.ctrlKey && e.key === 'Enter') {
+            e.preventDefault();
+            this.sendRequest();
+            return;
+        }
+
+        // Ctrl+K: Focus URL input (like Postman)
+        if (e.ctrlKey && e.key === 'k') {
+            e.preventDefault();
+            document.getElementById('urlInput').focus();
+            document.getElementById('urlInput').select();
+            return;
+        }
+
+        // Ctrl+Alt+C: Open collections
+        if (e.ctrlKey && e.altKey && e.key === 'c') {
+            e.preventDefault();
+            this.switchSidebarTab('collections');
+            return;
+        }
+
+        // Ctrl+Shift+S: Open settings
+        if (e.ctrlKey && e.shiftKey && e.key === 'S') {
+            e.preventDefault();
+            this.showSettingsModal();
+            return;
+        }
+
+        // Ctrl+M: Toggle mobile sidebar (when in mobile mode)
+        if (e.ctrlKey && e.key === 'm' && window.innerWidth <= 992) {
+            e.preventDefault();
+            this.toggleMobileSidebar();
+            return;
+        }
+
         // Ctrl+T: Toggle theme
         if (e.ctrlKey && e.key === 't') {
             e.preventDefault();
@@ -1738,7 +1788,7 @@ class RESTerX {
         this.renderHistory();
     }
 
-    // Enhanced history rendering with timestamps
+    // Enhanced history rendering with search and filters
     renderHistory() {
         const container = document.getElementById('historyContainer');
         if (!container) return;
@@ -1748,18 +1798,113 @@ class RESTerX {
             return;
         }
 
-        container.innerHTML = this.history.map(item => {
+        // Apply current filters
+        this.filterHistory();
+    }
+
+    filterHistory() {
+        const container = document.getElementById('historyContainer');
+        const searchTerm = document.getElementById('historySearch')?.value.toLowerCase() || '';
+        const methodFilter = document.getElementById('methodFilter')?.value || '';
+        const statusFilter = document.getElementById('statusFilter')?.value || '';
+
+        if (!container) return;
+
+        let filteredHistory = this.history.filter(item => {
+            // Search filter
+            const matchesSearch = !searchTerm || 
+                item.url.toLowerCase().includes(searchTerm) ||
+                item.method.toLowerCase().includes(searchTerm);
+
+            // Method filter
+            const matchesMethod = !methodFilter || item.method === methodFilter;
+
+            // Status filter
+            let matchesStatus = true;
+            if (statusFilter) {
+                const statusCode = item.response?.statusCode || 0;
+                switch (statusFilter) {
+                    case '2xx':
+                        matchesStatus = statusCode >= 200 && statusCode < 300;
+                        break;
+                    case '4xx':
+                        matchesStatus = statusCode >= 400 && statusCode < 500;
+                        break;
+                    case '5xx':
+                        matchesStatus = statusCode >= 500 && statusCode < 600;
+                        break;
+                    case 'error':
+                        matchesStatus = statusCode === 0 || item.response?.error;
+                        break;
+                }
+            }
+
+            return matchesSearch && matchesMethod && matchesStatus;
+        });
+
+        if (filteredHistory.length === 0) {
+            container.innerHTML = '<p class="empty-state">No matching requests found</p>';
+            return;
+        }
+
+        container.innerHTML = filteredHistory.map(item => {
             const date = new Date(item.timestamp);
             const timeAgo = this.getTimeAgo(date);
+            const statusCode = item.response?.statusCode || 0;
+            
+            let statusClass = 'error';
+            if (statusCode >= 200 && statusCode < 300) statusClass = 'success';
+            else if (statusCode >= 400 && statusCode < 500) statusClass = 'warning';
+            else if (statusCode >= 500) statusClass = 'error';
             
             return `
                 <div class="history-item" onclick="app.loadHistoryItem(${item.id})">
-                    <div class="history-method">${item.method}</div>
+                    <div class="history-method ${item.method}">${item.method}</div>
                     <div class="history-url">${item.url}</div>
                     <div class="history-timestamp">${timeAgo}</div>
+                    ${statusCode ? `<div class="history-status ${statusClass}">${statusCode}</div>` : ''}
                 </div>
             `;
         }).join('');
+    }
+
+    loadHistoryItem(id) {
+        const item = this.history.find(h => h.id == id);
+        if (item) {
+            document.getElementById('methodSelect').value = item.method;
+            document.getElementById('urlInput').value = item.url;
+            
+            // Load headers if any
+            this.clearHeaders();
+            if (item.headers && Object.keys(item.headers).length > 0) {
+                Object.entries(item.headers).forEach(([key, value]) => {
+                    this.addHeaderRow();
+                    const headerRows = document.querySelectorAll('.header-row');
+                    const lastRow = headerRows[headerRows.length - 1];
+                    lastRow.querySelector('.header-key').value = key;
+                    lastRow.querySelector('.header-value').value = value;
+                });
+            }
+            
+            // Load body if any
+            if (item.body) {
+                document.getElementById('requestBody').value = item.body;
+                // Switch to body tab
+                this.switchTab('body');
+            }
+            
+            // Close mobile sidebar if open
+            this.closeMobileSidebar();
+            
+            // Show notification
+            this.showNotification('Request loaded from history', 'success');
+        }
+    }
+
+    clearHeaders() {
+        const headerRows = document.querySelectorAll('.header-row');
+        headerRows.forEach(row => row.remove());
+        this.addHeaderRow(); // Add one empty row
     }
 
     getTimeAgo(date) {

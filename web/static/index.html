@@ -367,11 +367,33 @@
             </div>
             
             <div id="history" class="sidebar-pane">
-                <h3>History</h3>
+                <div class="history-header">
+                    <h3>History</h3>
+                    <div class="history-controls">
+                        <input type="text" id="historySearch" placeholder="Search history..." class="history-search">
+                        <button id="clearHistory" class="clear-btn">Clear All</button>
+                    </div>
+                </div>
+                <div class="history-filters">
+                    <select id="methodFilter" class="filter-select">
+                        <option value="">All Methods</option>
+                        <option value="GET">GET</option>
+                        <option value="POST">POST</option>
+                        <option value="PUT">PUT</option>
+                        <option value="PATCH">PATCH</option>
+                        <option value="DELETE">DELETE</option>
+                    </select>
+                    <select id="statusFilter" class="filter-select">
+                        <option value="">All Status</option>
+                        <option value="2xx">Success (2xx)</option>
+                        <option value="4xx">Client Error (4xx)</option>
+                        <option value="5xx">Server Error (5xx)</option>
+                        <option value="error">Failed</option>
+                    </select>
+                </div>
                 <div id="historyContainer" class="history-container">
                     <p class="empty-state">No requests yet</p>
                 </div>
-                <button id="clearHistory" class="clear-btn">Clear History</button>
             </div>
         </div>
     </div>
@@ -452,6 +474,14 @@
                     <div class="shortcut-category">
                         <h4>🎯 Navigation</h4>
                         <div class="shortcut-item">
+                            <kbd>Ctrl</kbd> + <kbd>K</kbd>
+                            <span>Focus URL Input</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>C</kbd>
+                            <span>Open Collections</span>
+                        </div>
+                        <div class="shortcut-item">
                             <kbd>1</kbd> - <kbd>6</kbd>
                             <span>Switch Request Tabs</span>
                         </div>
@@ -463,9 +493,17 @@
                             <kbd>Ctrl</kbd> + <kbd>H</kbd>
                             <span>Toggle History</span>
                         </div>
+                        <div class="shortcut-item">
+                            <kbd>Ctrl</kbd> + <kbd>M</kbd>
+                            <span>Toggle Mobile Sidebar</span>
+                        </div>
                     </div>
                     <div class="shortcut-category">
                         <h4>⚙️ General</h4>
+                        <div class="shortcut-item">
+                            <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd>
+                            <span>Open Settings</span>
+                        </div>
                         <div class="shortcut-item">
                             <kbd>Ctrl</kbd> + <kbd>T</kbd>
                             <span>Toggle Theme</span>
