@@ -586,6 +586,37 @@ class RESTerX {
         document.getElementById('refreshDocs').addEventListener('click', () => this.refreshDocumentation());
         document.getElementById('exportOpenAPI').addEventListener('click', () => this.exportOpenAPI());
         document.getElementById('copyDocs').addEventListener('click', () => this.copyDocumentation());
+
+        // Settings modal
+        document.getElementById('settingsBtn').addEventListener('click', () => this.showSettingsModal());
+        document.getElementById('saveSettings').addEventListener('click', () => this.saveSettings());
+        document.getElementById('resetSettings').addEventListener('click', () => this.resetSettings());
+
+        // History search and filtering
+        document.getElementById('historySearch').addEventListener('input', (e) => this.filterHistory());
+        document.getElementById('methodFilter').addEventListener('change', (e) => this.filterHistory());
+        document.getElementById('statusFilter').addEventListener('change', (e) => this.filterHistory());
+
+        // Mobile sidebar functionality
+        document.getElementById('mobileSidebarToggle').addEventListener('click', () => this.toggleMobileSidebar());
+        document.getElementById('mobileOverlay').addEventListener('click', () => this.closeMobileSidebar());
+        
+        // Close mobile sidebar when clicking inside sidebar links/buttons
+        document.querySelector('.sidebar').addEventListener('click', (e) => {
+            if (e.target.classList.contains('history-item') || 
+                e.target.closest('.history-item') ||
+                e.target.classList.contains('collection-item') ||
+                e.target.closest('.collection-item')) {
+                this.closeMobileSidebar();
+            }
+        });
+
+        // Handle window resize for mobile sidebar
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 992) {
+                this.closeMobileSidebar();
+            }
+        });
     }
 
     toggleTheme() {
@@ -740,8 +771,23 @@ class RESTerX {
         const method = document.getElementById('methodSelect').value;
         let url = document.getElementById('urlInput').value.trim();
 
+        // Enhanced URL validation
         if (!url) {
-            alert('Please enter a URL');
+            this.showNotification('Please enter a URL', 'error');
+            return;
+        }
+
+        // Add protocol if missing
+        if (!url.startsWith('http://') && !url.startsWith('https://')) {
+            url = 'https://' + url;
+            document.getElementById('urlInput').value = url;
+        }
+
+        // URL validation
+        try {
+            new URL(url);
+        } catch (e) {
+            this.showNotification('Please enter a valid URL', 'error');
             return;
         }
 
@@ -754,15 +800,31 @@ class RESTerX {
         // Resolve variables in body
         body = this.resolveVariables(body);
 
-        // Set content type for form data
-        const bodyType = document.querySelector('input[name="bodyType"]:checked').value;
-        if (bodyType === 'form' && body) {
-            headers['Content-Type'] = 'application/x-www-form-urlencoded';
-        } else if (bodyType === 'json' && body) {
-            headers['Content-Type'] = 'application/json';
+        // Enhanced body validation
+        if (body) {
+            const bodyType = document.querySelector('input[name="bodyType"]:checked').value;
+            if (bodyType === 'json' && body) {
+                try {
+                    JSON.parse(body);
+                    headers['Content-Type'] = 'application/json';
+                } catch (e) {
+                    this.showNotification('Invalid JSON in request body', 'error');
+                    return;
+                }
+            } else if (bodyType === 'form' && body) {
+                headers['Content-Type'] = 'application/x-www-form-urlencoded';
+            }
         }
 
-        const request = { method, url, headers, body };
+        // Request size validation (limit to 10MB)
+        const requestSize = new Blob([JSON.stringify({ method, url, headers, body })]).size;
+        const maxSize = 10 * 1024 * 1024; // 10MB
+        if (requestSize > maxSize) {
+            this.showNotification('Request size too large (max 10MB)', 'error');
+            return;
+        }
+
+        const request = { method, url, headers, body, timestamp: Date.now() };
 
         this.showLoading(true);
         this.disableSendButton(true);
@@ -812,11 +874,19 @@ class RESTerX {
         const startTime = Date.now();
         
         try {
+            // Enhanced timeout support with AbortController
+            const timeoutMs = parseInt(localStorage.getItem('resterx-timeout') || '30000'); // Default 30 seconds
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+            
             // Prepare fetch options
             const fetchOptions = {
                 method: request.method,
                 headers: request.headers || {},
                 mode: 'cors', // Enable CORS for cross-origin requests
+                signal: controller.signal,
+                // Add credentials for authentication when needed
+                credentials: 'omit' // Can be changed to 'include' if cookies are needed
             };
 
             // Add body for methods that support it
@@ -824,8 +894,10 @@ class RESTerX {
                 fetchOptions.body = request.body;
             }
 
-            // Make the request
+            // Make the request with timeout
             const response = await fetch(request.url, fetchOptions);
+            clearTimeout(timeoutId); // Clear timeout on successful response
+            
             const responseTime = Date.now() - startTime;
 
             // Get response headers
@@ -834,9 +906,16 @@ class RESTerX {
                 responseHeaders[key] = value;
             });
 
-            // Get response body
+            // Get response body with size limits
             let responseBody;
             const contentType = response.headers.get('content-type') || '';
+            const contentLength = parseInt(response.headers.get('content-length') || '0');
+            
+            // Check response size (limit to 50MB)
+            const maxResponseSize = 50 * 1024 * 1024;
+            if (contentLength > maxResponseSize) {
+                throw new Error(`Response too large: ${Math.round(contentLength / 1024 / 1024)}MB (max 50MB)`);
+            }
             
             if (contentType.includes('application/json')) {
                 try {
@@ -854,17 +933,29 @@ class RESTerX {
                 status: response.statusText || 'OK',
                 headers: responseHeaders,
                 body: responseBody,
-                responseTime: responseTime
+                responseTime: responseTime,
+                size: responseBody ? new Blob([responseBody]).size : 0
             };
 
         } catch (error) {
             const responseTime = Date.now() - startTime;
             
+            let errorMessage = error.message;
+            
+            // Enhanced error handling with specific messages
+            if (error.name === 'AbortError') {
+                errorMessage = 'Request timed out';
+            } else if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+                errorMessage = 'Network error - check your connection or CORS settings';
+            } else if (error.message.includes('Response too large')) {
+                errorMessage = error.message;
+            }
+            
             return {
                 statusCode: 0,
                 status: 'Error',
                 headers: {},
-                body: `Request failed: ${error.message}`,
+                body: `Request failed: ${errorMessage}`,
                 responseTime: responseTime,
                 error: true
             };
@@ -893,9 +984,31 @@ class RESTerX {
             statusElement.classList.add('status-5xx');
         }
 
-        // Response time
-        document.getElementById('responseTime').textContent = 
-            response.responseTime ? `${Math.round(response.responseTime / 1000000)}ms` : '';
+        // Enhanced response time display
+        const responseTimeMs = response.responseTime || 0;
+        let timeDisplay = '';
+        if (responseTimeMs < 1000) {
+            timeDisplay = `${responseTimeMs}ms`;
+        } else {
+            timeDisplay = `${(responseTimeMs / 1000).toFixed(2)}s`;
+        }
+        
+        document.getElementById('responseTime').textContent = timeDisplay;
+
+        // Add response size information
+        const responseSizeElement = document.getElementById('responseSize');
+        if (responseSizeElement) {
+            const size = response.size || 0;
+            let sizeDisplay = '';
+            if (size < 1024) {
+                sizeDisplay = `${size} B`;
+            } else if (size < 1024 * 1024) {
+                sizeDisplay = `${(size / 1024).toFixed(1)} KB`;
+            } else {
+                sizeDisplay = `${(size / 1024 / 1024).toFixed(1)} MB`;
+            }
+            responseSizeElement.textContent = sizeDisplay;
+        }
 
         // Response body
         const responseBody = document.getElementById('responseBody');
@@ -1518,6 +1631,51 @@ class RESTerX {
             return;
         }
 
+        // Enhanced keyboard shortcuts for better productivity
+        
+        // Enter: Send request (when URL field is focused)
+        if (e.key === 'Enter' && document.activeElement === document.getElementById('urlInput')) {
+            e.preventDefault();
+            this.sendRequest();
+            return;
+        }
+
+        // Ctrl+Enter: Send request from anywhere
+        if (e.ctrlKey && e.key === 'Enter') {
+            e.preventDefault();
+            this.sendRequest();
+            return;
+        }
+
+        // Ctrl+K: Focus URL input (like Postman)
+        if (e.ctrlKey && e.key === 'k') {
+            e.preventDefault();
+            document.getElementById('urlInput').focus();
+            document.getElementById('urlInput').select();
+            return;
+        }
+
+        // Ctrl+Alt+C: Open collections
+        if (e.ctrlKey && e.altKey && e.key === 'c') {
+            e.preventDefault();
+            this.switchSidebarTab('collections');
+            return;
+        }
+
+        // Ctrl+Shift+S: Open settings
+        if (e.ctrlKey && e.shiftKey && e.key === 'S') {
+            e.preventDefault();
+            this.showSettingsModal();
+            return;
+        }
+
+        // Ctrl+M: Toggle mobile sidebar (when in mobile mode)
+        if (e.ctrlKey && e.key === 'm' && window.innerWidth <= 992) {
+            e.preventDefault();
+            this.toggleMobileSidebar();
+            return;
+        }
+
         // Ctrl+T: Toggle theme
         if (e.ctrlKey && e.key === 't') {
             e.preventDefault();
@@ -1630,7 +1788,7 @@ class RESTerX {
         this.renderHistory();
     }
 
-    // Enhanced history rendering with timestamps
+    // Enhanced history rendering with search and filters
     renderHistory() {
         const container = document.getElementById('historyContainer');
         if (!container) return;
@@ -1640,18 +1798,113 @@ class RESTerX {
             return;
         }
 
-        container.innerHTML = this.history.map(item => {
+        // Apply current filters
+        this.filterHistory();
+    }
+
+    filterHistory() {
+        const container = document.getElementById('historyContainer');
+        const searchTerm = document.getElementById('historySearch')?.value.toLowerCase() || '';
+        const methodFilter = document.getElementById('methodFilter')?.value || '';
+        const statusFilter = document.getElementById('statusFilter')?.value || '';
+
+        if (!container) return;
+
+        let filteredHistory = this.history.filter(item => {
+            // Search filter
+            const matchesSearch = !searchTerm || 
+                item.url.toLowerCase().includes(searchTerm) ||
+                item.method.toLowerCase().includes(searchTerm);
+
+            // Method filter
+            const matchesMethod = !methodFilter || item.method === methodFilter;
+
+            // Status filter
+            let matchesStatus = true;
+            if (statusFilter) {
+                const statusCode = item.response?.statusCode || 0;
+                switch (statusFilter) {
+                    case '2xx':
+                        matchesStatus = statusCode >= 200 && statusCode < 300;
+                        break;
+                    case '4xx':
+                        matchesStatus = statusCode >= 400 && statusCode < 500;
+                        break;
+                    case '5xx':
+                        matchesStatus = statusCode >= 500 && statusCode < 600;
+                        break;
+                    case 'error':
+                        matchesStatus = statusCode === 0 || item.response?.error;
+                        break;
+                }
+            }
+
+            return matchesSearch && matchesMethod && matchesStatus;
+        });
+
+        if (filteredHistory.length === 0) {
+            container.innerHTML = '<p class="empty-state">No matching requests found</p>';
+            return;
+        }
+
+        container.innerHTML = filteredHistory.map(item => {
             const date = new Date(item.timestamp);
             const timeAgo = this.getTimeAgo(date);
+            const statusCode = item.response?.statusCode || 0;
+            
+            let statusClass = 'error';
+            if (statusCode >= 200 && statusCode < 300) statusClass = 'success';
+            else if (statusCode >= 400 && statusCode < 500) statusClass = 'warning';
+            else if (statusCode >= 500) statusClass = 'error';
             
             return `
                 <div class="history-item" onclick="app.loadHistoryItem(${item.id})">
-                    <div class="history-method">${item.method}</div>
+                    <div class="history-method ${item.method}">${item.method}</div>
                     <div class="history-url">${item.url}</div>
                     <div class="history-timestamp">${timeAgo}</div>
+                    ${statusCode ? `<div class="history-status ${statusClass}">${statusCode}</div>` : ''}
                 </div>
             `;
         }).join('');
+    }
+
+    loadHistoryItem(id) {
+        const item = this.history.find(h => h.id == id);
+        if (item) {
+            document.getElementById('methodSelect').value = item.method;
+            document.getElementById('urlInput').value = item.url;
+            
+            // Load headers if any
+            this.clearHeaders();
+            if (item.headers && Object.keys(item.headers).length > 0) {
+                Object.entries(item.headers).forEach(([key, value]) => {
+                    this.addHeaderRow();
+                    const headerRows = document.querySelectorAll('.header-row');
+                    const lastRow = headerRows[headerRows.length - 1];
+                    lastRow.querySelector('.header-key').value = key;
+                    lastRow.querySelector('.header-value').value = value;
+                });
+            }
+            
+            // Load body if any
+            if (item.body) {
+                document.getElementById('requestBody').value = item.body;
+                // Switch to body tab
+                this.switchTab('body');
+            }
+            
+            // Close mobile sidebar if open
+            this.closeMobileSidebar();
+            
+            // Show notification
+            this.showNotification('Request loaded from history', 'success');
+        }
+    }
+
+    clearHeaders() {
+        const headerRows = document.querySelectorAll('.header-row');
+        headerRows.forEach(row => row.remove());
+        this.addHeaderRow(); // Add one empty row
     }
 
     getTimeAgo(date) {
@@ -1794,6 +2047,164 @@ class RESTerX {
             notification.classList.remove('show');
             setTimeout(() => notification.remove(), 300);
         }, 3000);
+    }
+
+    // Settings Modal Methods
+    showSettingsModal() {
+        const modal = document.getElementById('settingsModal');
+        
+        // Load current settings
+        const timeout = parseInt(localStorage.getItem('resterx-timeout') || '30000') / 1000;
+        const maxResponseSize = parseInt(localStorage.getItem('resterx-max-response-size') || '52428800') / (1024 * 1024);
+        const followRedirects = localStorage.getItem('resterx-follow-redirects') !== 'false';
+        const validateSSL = localStorage.getItem('resterx-validate-ssl') !== 'false';
+        const sendCookies = localStorage.getItem('resterx-send-cookies') === 'true';
+        
+        document.getElementById('timeoutInput').value = timeout;
+        document.getElementById('maxResponseSize').value = maxResponseSize;
+        document.getElementById('followRedirects').checked = followRedirects;
+        document.getElementById('validateSSL').checked = validateSSL;
+        document.getElementById('sendCookies').checked = sendCookies;
+        
+        modal.style.display = 'flex';
+        setTimeout(() => modal.classList.add('show'), 10);
+    }
+
+    saveSettings() {
+        const timeout = parseInt(document.getElementById('timeoutInput').value) * 1000;
+        const maxResponseSize = parseInt(document.getElementById('maxResponseSize').value) * 1024 * 1024;
+        const followRedirects = document.getElementById('followRedirects').checked;
+        const validateSSL = document.getElementById('validateSSL').checked;
+        const sendCookies = document.getElementById('sendCookies').checked;
+        
+        // Validate inputs
+        if (timeout < 1000 || timeout > 300000) {
+            this.showNotification('Timeout must be between 1 and 300 seconds', 'error');
+            return;
+        }
+        
+        if (maxResponseSize < 1024 * 1024 || maxResponseSize > 100 * 1024 * 1024) {
+            this.showNotification('Max response size must be between 1 and 100 MB', 'error');
+            return;
+        }
+        
+        // Save settings
+        localStorage.setItem('resterx-timeout', timeout.toString());
+        localStorage.setItem('resterx-max-response-size', maxResponseSize.toString());
+        localStorage.setItem('resterx-follow-redirects', followRedirects.toString());
+        localStorage.setItem('resterx-validate-ssl', validateSSL.toString());
+        localStorage.setItem('resterx-send-cookies', sendCookies.toString());
+        
+        this.showNotification('Settings saved successfully!', 'success');
+        this.closeModal(document.getElementById('settingsModal'));
+    }
+
+    resetSettings() {
+        // Reset to defaults
+        document.getElementById('timeoutInput').value = 30;
+        document.getElementById('maxResponseSize').value = 50;
+        document.getElementById('followRedirects').checked = true;
+        document.getElementById('validateSSL').checked = true;
+        document.getElementById('sendCookies').checked = false;
+        
+        // Clear localStorage
+        localStorage.removeItem('resterx-timeout');
+        localStorage.removeItem('resterx-max-response-size');
+        localStorage.removeItem('resterx-follow-redirects');
+        localStorage.removeItem('resterx-validate-ssl');
+        localStorage.removeItem('resterx-send-cookies');
+        
+        this.showNotification('Settings reset to defaults', 'info');
+    }
+
+    // Mobile Sidebar Methods
+    toggleMobileSidebar() {
+        const sidebar = document.querySelector('.sidebar');
+        const overlay = document.getElementById('mobileOverlay');
+        const toggle = document.getElementById('mobileSidebarToggle');
+        
+        if (sidebar.classList.contains('mobile-open')) {
+            this.closeMobileSidebar();
+        } else {
+            this.openMobileSidebar();
+        }
+    }
+
+    openMobileSidebar() {
+        const sidebar = document.querySelector('.sidebar');
+        const overlay = document.getElementById('mobileOverlay');
+        const toggle = document.getElementById('mobileSidebarToggle');
+        
+        sidebar.classList.add('mobile-open');
+        overlay.classList.add('active');
+        toggle.innerHTML = '✕';
+        toggle.setAttribute('aria-label', 'Close Sidebar');
+        
+        // Prevent body scroll when sidebar is open
+        document.body.style.overflow = 'hidden';
+    }
+
+    closeMobileSidebar() {
+        const sidebar = document.querySelector('.sidebar');
+        const overlay = document.getElementById('mobileOverlay');
+        const toggle = document.getElementById('mobileSidebarToggle');
+        
+        sidebar.classList.remove('mobile-open');
+        overlay.classList.remove('active');
+        toggle.innerHTML = '📋';
+        toggle.setAttribute('aria-label', 'Toggle Sidebar');
+        
+        // Restore body scroll
+        document.body.style.overflow = '';
+    }
+
+    // Enhanced notification system with better mobile support
+    showNotification(message, type = 'info') {
+        // Remove existing notifications
+        const existingNotifications = document.querySelectorAll('.notification');
+        existingNotifications.forEach(notification => notification.remove());
+
+        const notification = document.createElement('div');
+        notification.className = `notification notification-${type}`;
+        notification.innerHTML = `
+            <span class="notification-icon">
+                ${type === 'success' ? '✅' : type === 'error' ? '❌' : type === 'warning' ? '⚠️' : 'ℹ️'}
+            </span>
+            <span class="notification-message">${message}</span>
+            <button class="notification-close" onclick="this.parentElement.remove()">×</button>
+        `;
+
+        // Style the notification for better mobile appearance
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border: 2px solid var(${type === 'success' ? '--success-color' : type === 'error' ? '--error-color' : type === 'warning' ? '--warning-color' : '--info-color'});
+            border-radius: var(--border-radius);
+            padding: 1rem;
+            box-shadow: var(--shadow-heavy);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            max-width: calc(100vw - 40px);
+            word-wrap: break-word;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+        `;
+
+        document.body.appendChild(notification);
+        
+        // Trigger animation
+        setTimeout(() => notification.style.transform = 'translateX(0)', 100);
+
+        // Auto-remove after 4 seconds
+        setTimeout(() => {
+            notification.style.transform = 'translateX(100%)';
+            setTimeout(() => notification.remove(), 300);
+        }, 4000);
     }
 }
 

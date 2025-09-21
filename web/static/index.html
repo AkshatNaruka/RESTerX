@@ -80,6 +80,14 @@
     </div>
 
     <div class="container">
+        <!-- Mobile Sidebar Toggle -->
+        <button id="mobileSidebarToggle" class="mobile-sidebar-toggle" aria-label="Toggle Sidebar">
+            📋
+        </button>
+        
+        <!-- Mobile Overlay -->
+        <div id="mobileOverlay" class="mobile-overlay"></div>
+        
         <header class="header">
             <h1>🚀 RESTerX</h1>
             <p class="subtitle">Advanced API Playground</p>
@@ -89,6 +97,9 @@
                 </select>
                 <button id="manageEnv" class="env-btn">
                     <span>⚙️</span>Manage Environments
+                </button>
+                <button id="settingsBtn" class="settings-btn" title="Request Settings">
+                    <span>⚙️</span>Settings
                 </button>
                 <button id="shortcutsBtn" class="shortcuts-btn" title="View Keyboard Shortcuts (?)">
                     <span>⌨️</span>
@@ -260,6 +271,7 @@
                     <div class="response-info">
                         <span id="statusCode" class="status-code"></span>
                         <span id="responseTime" class="response-time"></span>
+                        <span id="responseSize" class="response-size"></span>
                     </div>
                 </div>
 
@@ -355,11 +367,33 @@
             </div>
             
             <div id="history" class="sidebar-pane">
-                <h3>History</h3>
+                <div class="history-header">
+                    <h3>History</h3>
+                    <div class="history-controls">
+                        <input type="text" id="historySearch" placeholder="Search history..." class="history-search">
+                        <button id="clearHistory" class="clear-btn">Clear All</button>
+                    </div>
+                </div>
+                <div class="history-filters">
+                    <select id="methodFilter" class="filter-select">
+                        <option value="">All Methods</option>
+                        <option value="GET">GET</option>
+                        <option value="POST">POST</option>
+                        <option value="PUT">PUT</option>
+                        <option value="PATCH">PATCH</option>
+                        <option value="DELETE">DELETE</option>
+                    </select>
+                    <select id="statusFilter" class="filter-select">
+                        <option value="">All Status</option>
+                        <option value="2xx">Success (2xx)</option>
+                        <option value="4xx">Client Error (4xx)</option>
+                        <option value="5xx">Server Error (5xx)</option>
+                        <option value="error">Failed</option>
+                    </select>
+                </div>
                 <div id="historyContainer" class="history-container">
                     <p class="empty-state">No requests yet</p>
                 </div>
-                <button id="clearHistory" class="clear-btn">Clear History</button>
             </div>
         </div>
     </div>
@@ -440,6 +474,14 @@
                     <div class="shortcut-category">
                         <h4>🎯 Navigation</h4>
                         <div class="shortcut-item">
+                            <kbd>Ctrl</kbd> + <kbd>K</kbd>
+                            <span>Focus URL Input</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>C</kbd>
+                            <span>Open Collections</span>
+                        </div>
+                        <div class="shortcut-item">
                             <kbd>1</kbd> - <kbd>6</kbd>
                             <span>Switch Request Tabs</span>
                         </div>
@@ -451,9 +493,17 @@
                             <kbd>Ctrl</kbd> + <kbd>H</kbd>
                             <span>Toggle History</span>
                         </div>
+                        <div class="shortcut-item">
+                            <kbd>Ctrl</kbd> + <kbd>M</kbd>
+                            <span>Toggle Mobile Sidebar</span>
+                        </div>
                     </div>
                     <div class="shortcut-category">
                         <h4>⚙️ General</h4>
+                        <div class="shortcut-item">
+                            <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd>
+                            <span>Open Settings</span>
+                        </div>
                         <div class="shortcut-item">
                             <kbd>Ctrl</kbd> + <kbd>T</kbd>
                             <span>Toggle Theme</span>
@@ -467,6 +517,58 @@
                             <span>Close Modal</span>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Request Settings</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="settings-section">
+                    <h4>Request Timeout</h4>
+                    <div class="form-group">
+                        <label for="timeoutInput">Timeout (seconds):</label>
+                        <input type="number" id="timeoutInput" min="1" max="300" value="30" class="settings-input">
+                        <small>Maximum time to wait for a response (1-300 seconds)</small>
+                    </div>
+                </div>
+                
+                <div class="settings-section">
+                    <h4>Response Limits</h4>
+                    <div class="form-group">
+                        <label for="maxResponseSize">Max Response Size (MB):</label>
+                        <input type="number" id="maxResponseSize" min="1" max="100" value="50" class="settings-input">
+                        <small>Maximum response size to accept (1-100 MB)</small>
+                    </div>
+                </div>
+                
+                <div class="settings-section">
+                    <h4>Request Options</h4>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="followRedirects" checked>
+                            Follow redirects automatically
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="validateSSL" checked>
+                            Validate SSL certificates
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="sendCookies">
+                            Send cookies with requests
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="settings-actions">
+                    <button id="saveSettings" class="save-btn">Save Settings</button>
+                    <button id="resetSettings" class="reset-btn">Reset to Defaults</button>
                 </div>
             </div>
         </div>
