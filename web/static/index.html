@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RESTerX - Advanced API Playground</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>">
 </head>
@@ -12,7 +15,7 @@
     <div id="authModal" class="auth-modal" style="display: none;">
         <div class="auth-modal-content">
             <div class="auth-header">
-                <h2>🚀 RESTerX Enterprise</h2>
+                <h2>RESTerX Enterprise</h2>
                 <p>Sign in to access your workspaces</p>
             </div>
             <div class="auth-tabs">
@@ -89,7 +92,7 @@
         <div id="mobileOverlay" class="mobile-overlay"></div>
         
         <header class="header">
-            <h1>🚀 RESTerX</h1>
+            <h1>RESTerX</h1>
             <p class="subtitle">Advanced API Playground</p>
             <div class="header-controls">
                 <select id="environmentSelect" class="environment-select">
@@ -108,22 +111,176 @@
             </div>
         </header>
 
+        <!-- Quick Action Bar -->
+        <div class="quick-action-bar">
+            <div class="quick-actions">
+                <button id="quickSend" class="quick-action-btn primary" title="Send Request (Ctrl+Enter)">
+                    <span class="action-icon">⚡</span>
+                    <span class="action-text">Send</span>
+                    <kbd class="shortcut">⌘↵</kbd>
+                </button>
+                <div class="action-divider"></div>
+                <button id="quickClear" class="quick-action-btn" title="Clear Request (Ctrl+K)">
+                    <span class="action-icon">🗑️</span>
+                    <span class="action-text">Clear</span>
+                </button>
+                <button id="quickSave" class="quick-action-btn" title="Save to Collection (Ctrl+S)">
+                    <span class="action-icon">💾</span>
+                    <span class="action-text">Save</span>
+                </button>
+                <button id="quickHistory" class="quick-action-btn" title="View History (Ctrl+H)">
+                    <span class="action-icon">🕒</span>
+                    <span class="action-text">History</span>
+                </button>
+                <div class="action-divider"></div>
+                <button id="quickExport" class="quick-action-btn" title="Export as Code">
+                    <span class="action-icon">📝</span>
+                    <span class="action-text">Code</span>
+                </button>
+                <button id="quickShare" class="quick-action-btn" title="Share Request">
+                    <span class="action-icon">🔗</span>
+                    <span class="action-text">Share</span>
+                </button>
+                <div class="quick-actions-right">
+                    <div class="request-status" id="requestStatus">
+                        <span class="status-dot"></span>
+                        <span class="status-text">Ready</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <main class="main">
             <div class="request-section">
                 <div class="request-controls">
                     <div class="templates-section">
-                        <label for="templateSelect" class="template-label">
-                            <span class="template-icon">🚀</span>Quick Templates:
-                        </label>
-                        <select id="templateSelect" class="template-select">
-                            <option value="">Select a template...</option>
-                            <option value="jsonplaceholder-posts">JSONPlaceholder - Posts</option>
-                            <option value="jsonplaceholder-users">JSONPlaceholder - Users</option>
-                            <option value="httpbin-get">HTTPBin - GET Test</option>
-                            <option value="httpbin-post">HTTPBin - POST Test</option>
-                            <option value="github-api">GitHub API - User Info</option>
-                            <option value="rest-countries">REST Countries API</option>
-                        </select>
+                        <div class="templates-header">
+                            <h3 class="templates-title">
+                                <span class="template-icon">🚀</span>
+                                API Templates & Examples
+                            </h3>
+                            <button id="templatesToggle" class="templates-toggle-btn">
+                                <span class="toggle-icon">�</span>
+                                Browse Gallery
+                            </button>
+                        </div>
+                        
+                        <!-- Quick Template Selector -->
+                        <div class="quick-templates">
+                            <select id="templateSelect" class="template-select">
+                                <option value="">Select a template...</option>
+                                <option value="jsonplaceholder-posts">JSONPlaceholder - Posts</option>
+                                <option value="jsonplaceholder-users">JSONPlaceholder - Users</option>
+                                <option value="httpbin-get">HTTPBin - GET Test</option>
+                                <option value="httpbin-post">HTTPBin - POST Test</option>
+                                <option value="github-api">GitHub API - User Info</option>
+                                <option value="rest-countries">REST Countries API</option>
+                            </select>
+                        </div>
+
+                        <!-- Template Gallery (expandable) -->
+                        <div id="templateGallery" class="template-gallery" style="display: none;">
+                            <div class="template-categories">
+                                <button class="category-btn active" data-category="popular">🔥 Popular</button>
+                                <button class="category-btn" data-category="rest">🌐 REST APIs</button>
+                                <button class="category-btn" data-category="auth">🔐 Authentication</button>
+                                <button class="category-btn" data-category="testing">🧪 Testing</button>
+                                <button class="category-btn" data-category="webhooks">🔗 Webhooks</button>
+                            </div>
+                            
+                            <div class="template-grid">
+                                <!-- Popular Templates -->
+                                <div class="template-card" data-category="popular" data-template="jsonplaceholder-posts">
+                                    <div class="template-preview">
+                                        <div class="method-badge get">GET</div>
+                                        <div class="endpoint-preview">/posts</div>
+                                    </div>
+                                    <div class="template-info">
+                                        <h4>JSONPlaceholder Posts</h4>
+                                        <p>Get all posts from JSONPlaceholder</p>
+                                        <div class="template-tags">
+                                            <span class="tag">JSON</span>
+                                            <span class="tag">REST</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="template-card" data-category="popular" data-template="github-api">
+                                    <div class="template-preview">
+                                        <div class="method-badge get">GET</div>
+                                        <div class="endpoint-preview">/users/:username</div>
+                                    </div>
+                                    <div class="template-info">
+                                        <h4>GitHub User API</h4>
+                                        <p>Fetch GitHub user information</p>
+                                        <div class="template-tags">
+                                            <span class="tag">Public API</span>
+                                            <span class="tag">JSON</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="template-card" data-category="auth" data-template="bearer-auth">
+                                    <div class="template-preview">
+                                        <div class="method-badge post">POST</div>
+                                        <div class="endpoint-preview">/api/protected</div>
+                                    </div>
+                                    <div class="template-info">
+                                        <h4>Bearer Token Auth</h4>
+                                        <p>Example with Bearer token authentication</p>
+                                        <div class="template-tags">
+                                            <span class="tag">Auth</span>
+                                            <span class="tag">JWT</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="template-card" data-category="testing" data-template="httpbin-post">
+                                    <div class="template-preview">
+                                        <div class="method-badge post">POST</div>
+                                        <div class="endpoint-preview">/post</div>
+                                    </div>
+                                    <div class="template-info">
+                                        <h4>HTTPBin POST Test</h4>
+                                        <p>Test POST requests with HTTPBin</p>
+                                        <div class="template-tags">
+                                            <span class="tag">Testing</span>
+                                            <span class="tag">JSON</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="template-card" data-category="rest" data-template="rest-countries">
+                                    <div class="template-preview">
+                                        <div class="method-badge get">GET</div>
+                                        <div class="endpoint-preview">/v3.1/all</div>
+                                    </div>
+                                    <div class="template-info">
+                                        <h4>REST Countries API</h4>
+                                        <p>Get information about countries</p>
+                                        <div class="template-tags">
+                                            <span class="tag">Public API</span>
+                                            <span class="tag">Geography</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="template-card" data-category="webhooks" data-template="webhook-receiver">
+                                    <div class="template-preview">
+                                        <div class="method-badge post">POST</div>
+                                        <div class="endpoint-preview">/webhook</div>
+                                    </div>
+                                    <div class="template-info">
+                                        <h4>Webhook Receiver</h4>
+                                        <p>Test webhook payload reception</p>
+                                        <div class="template-tags">
+                                            <span class="tag">Webhooks</span>
+                                            <span class="tag">Testing</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
@@ -316,10 +473,40 @@
                 <div class="response-content">
                     <div id="response-body" class="response-tab-pane active">
                         <div class="response-controls">
-                            <button id="formatJson" class="format-btn">Format JSON</button>
-                            <button id="copyResponse" class="copy-btn">Copy</button>
+                            <div class="response-tools">
+                                <button id="formatJson" class="tool-btn">🎨 Pretty</button>
+                                <button id="minifyJson" class="tool-btn">📦 Minify</button>
+                                <button id="searchResponse" class="tool-btn">🔍 Search</button>
+                                <button id="expandAll" class="tool-btn">📂 Expand All</button>
+                                <button id="collapseAll" class="tool-btn">📁 Collapse All</button>
+                            </div>
+                            <div class="response-actions">
+                                <div class="response-size-info" id="responseSizeInfo"></div>
+                                <button id="copyResponse" class="copy-btn">📋 Copy</button>
+                                <button id="downloadResponse" class="download-btn">💾 Download</button>
+                            </div>
                         </div>
-                        <pre id="responseBody" class="response-text">Send a request to see the response</pre>
+                        
+                        <!-- Search Bar -->
+                        <div id="responseSearch" class="response-search" style="display: none;">
+                            <input type="text" id="responseSearchInput" placeholder="Search in response..." class="search-input">
+                            <div class="search-info">
+                                <span id="searchResults">0 results</span>
+                                <button id="searchPrev" class="nav-btn">↑</button>
+                                <button id="searchNext" class="nav-btn">↓</button>
+                                <button id="closeSearch" class="close-btn">×</button>
+                            </div>
+                        </div>
+
+                        <!-- JSON Tree View -->
+                        <div id="jsonTreeContainer" class="json-tree-container" style="display: none;">
+                            <div id="jsonTree" class="json-tree"></div>
+                        </div>
+
+                        <!-- Raw Response -->
+                        <div class="response-viewer">
+                            <pre id="responseBody" class="response-text">Send a request to see the response</pre>
+                        </div>
                     </div>
                     <div id="response-headers" class="response-tab-pane">
                         <pre id="responseHeaders" class="response-text">Response headers will appear here</pre>
@@ -569,6 +756,185 @@
                 <div class="settings-actions">
                     <button id="saveSettings" class="save-btn">Save Settings</button>
                     <button id="resetSettings" class="reset-btn">Reset to Defaults</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Code Export Modal -->
+    <div id="codeExportModal" class="modal" style="display: none;">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3>📝 Export as Code</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="code-export-tabs">
+                    <button class="export-tab-btn active" data-lang="curl">cURL</button>
+                    <button class="export-tab-btn" data-lang="javascript">JavaScript</button>
+                    <button class="export-tab-btn" data-lang="python">Python</button>
+                    <button class="export-tab-btn" data-lang="nodejs">Node.js</button>
+                    <button class="export-tab-btn" data-lang="go">Go</button>
+                    <button class="export-tab-btn" data-lang="php">PHP</button>
+                    <button class="export-tab-btn" data-lang="java">Java</button>
+                    <button class="export-tab-btn" data-lang="swift">Swift</button>
+                </div>
+                <div class="code-export-content">
+                    <div class="code-header">
+                        <span id="currentLanguage">cURL</span>
+                        <button id="copyExportedCode" class="copy-code-btn">📋 Copy</button>
+                    </div>
+                    <pre id="exportedCode" class="exported-code"><!-- Generated code will appear here --></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance Insights Modal -->
+    <div id="performanceModal" class="modal" style="display: none;">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3>⚡ Performance Insights</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="performance-dashboard">
+                    <div class="perf-stats-grid">
+                        <div class="perf-stat-card">
+                            <div class="stat-icon">⏱️</div>
+                            <div class="stat-info">
+                                <div class="stat-value" id="perfResponseTime">-</div>
+                                <div class="stat-label">Response Time</div>
+                            </div>
+                        </div>
+                        <div class="perf-stat-card">
+                            <div class="stat-icon">📦</div>
+                            <div class="stat-info">
+                                <div class="stat-value" id="perfResponseSize">-</div>
+                                <div class="stat-label">Response Size</div>
+                            </div>
+                        </div>
+                        <div class="perf-stat-card">
+                            <div class="stat-icon">🔗</div>
+                            <div class="stat-info">
+                                <div class="stat-value" id="perfDnsTime">-</div>
+                                <div class="stat-label">DNS Lookup</div>
+                            </div>
+                        </div>
+                        <div class="perf-stat-card">
+                            <div class="stat-icon">🤝</div>
+                            <div class="stat-info">
+                                <div class="stat-value" id="perfConnectTime">-</div>
+                                <div class="stat-label">Connection</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="performance-chart">
+                        <h4>Request Timeline</h4>
+                        <div class="timeline-container">
+                            <div class="timeline-bar">
+                                <div class="timeline-segment dns" data-label="DNS"></div>
+                                <div class="timeline-segment connect" data-label="Connect"></div>
+                                <div class="timeline-segment request" data-label="Request"></div>
+                                <div class="timeline-segment response" data-label="Response"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="performance-tips">
+                        <h4>💡 Optimization Tips</h4>
+                        <div id="performanceTips" class="tips-list">
+                            <!-- Tips will be dynamically generated -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Request History Timeline Modal -->
+    <div id="historyTimelineModal" class="modal" style="display: none;">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3>🕒 Request History Timeline</h3>
+                <div class="timeline-controls">
+                    <input type="text" id="timelineSearch" placeholder="Search requests..." class="timeline-search">
+                    <select id="timelineFilter" class="timeline-filter">
+                        <option value="all">All Requests</option>
+                        <option value="success">Successful</option>
+                        <option value="error">Errors</option>
+                        <option value="slow">Slow (>1s)</option>
+                    </select>
+                </div>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="timeline-container">
+                    <div id="requestTimeline" class="request-timeline">
+                        <!-- Timeline items will be dynamically generated -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Keyboard Shortcuts Modal -->
+    <div id="shortcutsModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>⌨️ Keyboard Shortcuts</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="shortcuts-grid">
+                    <div class="shortcut-section">
+                        <h4>🚀 Request Actions</h4>
+                        <div class="shortcut-item">
+                            <kbd>Ctrl</kbd> + <kbd>Enter</kbd>
+                            <span>Send Request</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>Ctrl</kbd> + <kbd>K</kbd>
+                            <span>Clear Request</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>Ctrl</kbd> + <kbd>S</kbd>
+                            <span>Save to Collection</span>
+                        </div>
+                    </div>
+                    
+                    <div class="shortcut-section">
+                        <h4>📱 Navigation</h4>
+                        <div class="shortcut-item">
+                            <kbd>Ctrl</kbd> + <kbd>H</kbd>
+                            <span>Toggle History</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>Ctrl</kbd> + <kbd>E</kbd>
+                            <span>Export Code</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>Ctrl</kbd> + <kbd>P</kbd>
+                            <span>Performance Insights</span>
+                        </div>
+                    </div>
+                    
+                    <div class="shortcut-section">
+                        <h4>🔧 Tabs & Views</h4>
+                        <div class="shortcut-item">
+                            <kbd>Ctrl</kbd> + <kbd>1-6</kbd>
+                            <span>Switch Tabs</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>Ctrl</kbd> + <kbd>F</kbd>
+                            <span>Search in Response</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>?</kbd>
+                            <span>Show Shortcuts</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

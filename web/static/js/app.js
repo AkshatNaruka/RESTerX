@@ -507,6 +507,9 @@ class RESTerX {
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => this.handleKeyboardShortcuts(e));
 
+        // Enhanced UI Event Listeners
+        this.setupEnhancedEventListeners();
+
         // Auth type change
         document.querySelectorAll('input[name="authType"]').forEach(radio => {
             radio.addEventListener('change', (e) => this.handleAuthTypeChange(e.target.value));
@@ -2206,9 +2209,474 @@ class RESTerX {
             setTimeout(() => notification.remove(), 300);
         }, 4000);
     }
+
+    // Enhanced UI Event Listeners
+    setupEnhancedEventListeners() {
+        // Quick Action Bar
+        document.getElementById('quickSend')?.addEventListener('click', () => this.sendRequest());
+        document.getElementById('quickClear')?.addEventListener('click', () => this.clearRequest());
+        document.getElementById('quickSave')?.addEventListener('click', () => this.showSaveModal());
+        document.getElementById('quickHistory')?.addEventListener('click', () => this.showHistoryTimelineModal());
+        document.getElementById('quickExport')?.addEventListener('click', () => this.showCodeExportModal());
+        document.getElementById('quickShare')?.addEventListener('click', () => this.shareRequest());
+
+        // Template Gallery
+        document.getElementById('templatesToggle')?.addEventListener('click', () => this.toggleTemplateGallery());
+        document.querySelectorAll('.category-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => this.filterTemplatesByCategory(e.target.dataset.category));
+        });
+        document.querySelectorAll('.template-card').forEach(card => {
+            card.addEventListener('click', (e) => this.loadTemplateFromCard(e.currentTarget.dataset.template));
+        });
+
+        // Response Enhancement Tools
+        document.getElementById('formatJson')?.addEventListener('click', () => this.formatJsonResponse());
+        document.getElementById('minifyJson')?.addEventListener('click', () => this.minifyJsonResponse());
+        document.getElementById('searchResponse')?.addEventListener('click', () => this.showResponseSearch());
+        document.getElementById('expandAll')?.addEventListener('click', () => this.expandAllJsonNodes());
+        document.getElementById('collapseAll')?.addEventListener('click', () => this.collapseAllJsonNodes());
+        document.getElementById('downloadResponse')?.addEventListener('click', () => this.downloadResponse());
+
+        // Response Search
+        document.getElementById('responseSearchInput')?.addEventListener('input', (e) => this.searchInResponse(e.target.value));
+        document.getElementById('searchNext')?.addEventListener('click', () => this.searchNext());
+        document.getElementById('searchPrev')?.addEventListener('click', () => this.searchPrev());
+        document.getElementById('closeSearch')?.addEventListener('click', () => this.hideResponseSearch());
+
+        // Modal Controls
+        document.querySelectorAll('.modal-close').forEach(btn => {
+            btn.addEventListener('click', (e) => this.closeModal(e.target.closest('.modal')));
+        });
+
+        // Code Export Modal
+        document.querySelectorAll('.export-tab-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => this.switchCodeLanguage(e.target.dataset.lang));
+        });
+        document.getElementById('copyExportedCode')?.addEventListener('click', () => this.copyExportedCode());
+
+        // Performance Modal
+        document.getElementById('quickSend')?.addEventListener('click', () => this.trackPerformance = true);
+
+        // Keyboard Shortcuts Enhancement
+        document.addEventListener('keydown', (e) => this.handleEnhancedKeyboardShortcuts(e));
+    }
+
+    // Template Gallery Functions
+    toggleTemplateGallery() {
+        const gallery = document.getElementById('templateGallery');
+        const isVisible = gallery.style.display !== 'none';
+        gallery.style.display = isVisible ? 'none' : 'block';
+        
+        const toggleBtn = document.getElementById('templatesToggle');
+        toggleBtn.querySelector('.toggle-icon').textContent = isVisible ? '📁' : '📂';
+    }
+
+    filterTemplatesByCategory(category) {
+        // Update active button
+        document.querySelectorAll('.category-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelector(`[data-category="${category}"]`).classList.add('active');
+
+        // Show/hide templates
+        document.querySelectorAll('.template-card').forEach(card => {
+            if (category === 'popular' || card.dataset.category === category) {
+                card.style.display = 'block';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    }
+
+    loadTemplateFromCard(templateId) {
+        this.loadTemplate(templateId);
+        this.toggleTemplateGallery(); // Close gallery after selection
+        this.showNotification('Template loaded successfully! 🚀');
+    }
+
+    // Response Enhancement Functions
+    formatJsonResponse() {
+        const responseBody = document.getElementById('responseBody');
+        try {
+            const parsed = JSON.parse(responseBody.textContent);
+            responseBody.textContent = JSON.stringify(parsed, null, 2);
+            this.showNotification('JSON formatted! ✨');
+        } catch (e) {
+            this.showNotification('Unable to format: Not valid JSON', 'error');
+        }
+    }
+
+    minifyJsonResponse() {
+        const responseBody = document.getElementById('responseBody');
+        try {
+            const parsed = JSON.parse(responseBody.textContent);
+            responseBody.textContent = JSON.stringify(parsed);
+            this.showNotification('JSON minified! 📦');
+        } catch (e) {
+            this.showNotification('Unable to minify: Not valid JSON', 'error');
+        }
+    }
+
+    showResponseSearch() {
+        const searchBar = document.getElementById('responseSearch');
+        searchBar.style.display = 'flex';
+        document.getElementById('responseSearchInput').focus();
+    }
+
+    hideResponseSearch() {
+        const searchBar = document.getElementById('responseSearch');
+        searchBar.style.display = 'none';
+        this.clearSearchHighlights();
+    }
+
+    searchInResponse(query) {
+        if (!query) {
+            this.clearSearchHighlights();
+            document.getElementById('searchResults').textContent = '0 results';
+            return;
+        }
+
+        const responseText = document.getElementById('responseBody').textContent;
+        const matches = responseText.toLowerCase().split(query.toLowerCase()).length - 1;
+        document.getElementById('searchResults').textContent = `${matches} results`;
+        
+        // Simple highlighting (in a real app, you'd want more sophisticated highlighting)
+        if (matches > 0) {
+            this.highlightSearchResults(query);
+        }
+    }
+
+    highlightSearchResults(query) {
+        // Simplified highlighting implementation
+        const responseElement = document.getElementById('responseBody');
+        const text = responseElement.textContent;
+        const regex = new RegExp(`(${query})`, 'gi');
+        const highlightedText = text.replace(regex, '<mark class="search-highlight">$1</mark>');
+        responseElement.innerHTML = highlightedText;
+    }
+
+    clearSearchHighlights() {
+        const responseElement = document.getElementById('responseBody');
+        responseElement.innerHTML = responseElement.textContent;
+    }
+
+    downloadResponse() {
+        const responseText = document.getElementById('responseBody').textContent;
+        const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+        const filename = `resterx-response-${timestamp}.json`;
+        
+        const blob = new Blob([responseText], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        this.showNotification(`Response downloaded as ${filename}! 💾`);
+    }
+
+    // Code Export Functions
+    showCodeExportModal() {
+        document.getElementById('codeExportModal').style.display = 'flex';
+        this.generateCode('curl'); // Default to cURL
+    }
+
+    switchCodeLanguage(language) {
+        document.querySelectorAll('.export-tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelector(`[data-lang="${language}"]`).classList.add('active');
+        document.getElementById('currentLanguage').textContent = language.toUpperCase();
+        this.generateCode(language);
+    }
+
+    generateCode(language) {
+        const method = document.getElementById('methodSelect').value;
+        const url = document.getElementById('urlInput').value;
+        const headers = this.getHeaders();
+        const body = document.getElementById('requestBody').value;
+        
+        let code = '';
+        
+        switch (language) {
+            case 'curl':
+                code = this.generateCurlCode(method, url, headers, body);
+                break;
+            case 'javascript':
+                code = this.generateJavaScriptCode(method, url, headers, body);
+                break;
+            case 'python':
+                code = this.generatePythonCode(method, url, headers, body);
+                break;
+            case 'nodejs':
+                code = this.generateNodeJSCode(method, url, headers, body);
+                break;
+            case 'go':
+                code = this.generateGoCode(method, url, headers, body);
+                break;
+            default:
+                code = '// Code generation for this language is coming soon!';
+        }
+        
+        document.getElementById('exportedCode').textContent = code;
+    }
+
+    generateCurlCode(method, url, headers, body) {
+        let code = `curl -X ${method} \\\n  '${url}'`;
+        
+        Object.entries(headers).forEach(([key, value]) => {
+            if (key && value) {
+                code += ` \\\n  -H '${key}: ${value}'`;
+            }
+        });
+        
+        if (body && ['POST', 'PUT', 'PATCH'].includes(method)) {
+            code += ` \\\n  -d '${body}'`;
+        }
+        
+        return code;
+    }
+
+    generateJavaScriptCode(method, url, headers, body) {
+        const headersObj = Object.entries(headers)
+            .filter(([key, value]) => key && value)
+            .reduce((obj, [key, value]) => {
+                obj[key] = value;
+                return obj;
+            }, {});
+
+        let code = `fetch('${url}', {\n  method: '${method}',\n  headers: ${JSON.stringify(headersObj, null, 4)}`;
+        
+        if (body && ['POST', 'PUT', 'PATCH'].includes(method)) {
+            code += `,\n  body: ${JSON.stringify(body)}`;
+        }
+        
+        code += `\n})\n.then(response => response.json())\n.then(data => console.log(data))\n.catch(error => console.error('Error:', error));`;
+        
+        return code;
+    }
+
+    generatePythonCode(method, url, headers, body) {
+        let code = `import requests\n\nurl = '${url}'\nheaders = ${JSON.stringify(headers, null, 4).replace(/"/g, "'")}`;
+        
+        if (body && ['POST', 'PUT', 'PATCH'].includes(method)) {
+            code += `\ndata = ${JSON.stringify(body, null, 4).replace(/"/g, "'")}`;
+            code += `\n\nresponse = requests.${method.toLowerCase()}(url, headers=headers, json=data)`;
+        } else {
+            code += `\n\nresponse = requests.${method.toLowerCase()}(url, headers=headers)`;
+        }
+        
+        code += `\nprint(response.json())`;
+        
+        return code;
+    }
+
+    generateNodeJSCode(method, url, headers, body) {
+        let code = `const https = require('https');\nconst http = require('http');\n\nconst options = {\n  method: '${method}',\n  headers: ${JSON.stringify(headers, null, 4)}`;
+        
+        if (body && ['POST', 'PUT', 'PATCH'].includes(method)) {
+            code += `,\n  body: JSON.stringify(${body})`;
+        }
+        
+        code += `\n};\n\nconst req = ${url.startsWith('https') ? 'https' : 'http'}.request('${url}', options, (res) => {\n  let data = '';\n  res.on('data', (chunk) => data += chunk);\n  res.on('end', () => console.log(JSON.parse(data)));\n});\n\nreq.end();`;
+        
+        return code;
+    }
+
+    generateGoCode(method, url, headers, body) {
+        let code = `package main\n\nimport (\n    "fmt"\n    "net/http"\n    "strings"\n)\n\nfunc main() {\n`;
+        
+        if (body && ['POST', 'PUT', 'PATCH'].includes(method)) {
+            code += `    payload := strings.NewReader(\`${body}\`)\n`;
+            code += `    req, _ := http.NewRequest("${method}", "${url}", payload)\n`;
+        } else {
+            code += `    req, _ := http.NewRequest("${method}", "${url}", nil)\n`;
+        }
+        
+        Object.entries(headers).forEach(([key, value]) => {
+            if (key && value) {
+                code += `    req.Header.Add("${key}", "${value}")\n`;
+            }
+        });
+        
+        code += `    client := &http.Client{}\n    res, err := client.Do(req)\n    if err != nil {\n        fmt.Println(err)\n        return\n    }\n    defer res.Body.Close()\n}`;
+        
+        return code;
+    }
+
+    copyExportedCode() {
+        const code = document.getElementById('exportedCode').textContent;
+        navigator.clipboard.writeText(code).then(() => {
+            this.showNotification('Code copied to clipboard! 📋');
+        }).catch(() => {
+            this.showNotification('Failed to copy code', 'error');
+        });
+    }
+
+    // Performance Functions
+    showHistoryTimelineModal() {
+        document.getElementById('historyTimelineModal').style.display = 'flex';
+        this.renderHistoryTimeline();
+    }
+
+    renderHistoryTimeline() {
+        const timeline = document.getElementById('requestTimeline');
+        timeline.innerHTML = '';
+        
+        this.history.slice(-50).reverse().forEach((item, index) => {
+            const timelineItem = document.createElement('div');
+            timelineItem.className = 'timeline-item';
+            
+            const statusClass = item.status >= 200 && item.status < 300 ? 'success' : 'error';
+            
+            timelineItem.innerHTML = `
+                <div class="timeline-method method-badge ${item.method.toLowerCase()}">${item.method}</div>
+                <div class="timeline-url">${item.url}</div>
+                <div class="timeline-status ${statusClass}">${item.status || 'Failed'}</div>
+                <div class="timeline-time">${new Date(item.timestamp).toLocaleTimeString()}</div>
+            `;
+            
+            timelineItem.addEventListener('click', () => {
+                this.loadRequestFromHistory(item);
+                this.closeModal(document.getElementById('historyTimelineModal'));
+            });
+            
+            timeline.appendChild(timelineItem);
+        });
+    }
+
+    // Utility Functions
+    clearRequest() {
+        document.getElementById('urlInput').value = '';
+        document.getElementById('requestBody').value = '';
+        document.getElementById('methodSelect').value = 'GET';
+        
+        // Clear headers
+        const headerRows = document.querySelectorAll('.header-row');
+        headerRows.forEach((row, index) => {
+            if (index === 0) {
+                row.querySelector('.header-key').value = '';
+                row.querySelector('.header-value').value = '';
+            } else {
+                row.remove();
+            }
+        });
+        
+        this.showNotification('Request cleared! 🧹');
+    }
+
+    shareRequest() {
+        const requestData = {
+            method: document.getElementById('methodSelect').value,
+            url: document.getElementById('urlInput').value,
+            headers: this.getHeaders(),
+            body: document.getElementById('requestBody').value
+        };
+        
+        const encoded = btoa(JSON.stringify(requestData));
+        const shareUrl = `${window.location.origin}${window.location.pathname}?request=${encoded}`;
+        
+        navigator.clipboard.writeText(shareUrl).then(() => {
+            this.showNotification('Request URL copied to clipboard! 🔗');
+        }).catch(() => {
+            this.showNotification('Failed to copy share URL', 'error');
+        });
+    }
+
+    closeModal(modal) {
+        modal.style.display = 'none';
+    }
+
+    handleEnhancedKeyboardShortcuts(e) {
+        // Enhanced keyboard shortcuts
+        if (e.ctrlKey || e.metaKey) {
+            switch (e.key.toLowerCase()) {
+                case 'e':
+                    e.preventDefault();
+                    this.showCodeExportModal();
+                    break;
+                case 'p':
+                    e.preventDefault();
+                    document.getElementById('performanceModal').style.display = 'flex';
+                    break;
+                case 'f':
+                    if (!e.shiftKey) {
+                        e.preventDefault();
+                        this.showResponseSearch();
+                    }
+                    break;
+                case '1':
+                case '2':
+                case '3':
+                case '4':
+                case '5':
+                case '6':
+                    e.preventDefault();
+                    const tabIndex = parseInt(e.key) - 1;
+                    const tabs = document.querySelectorAll('.tab-btn');
+                    if (tabs[tabIndex]) {
+                        tabs[tabIndex].click();
+                    }
+                    break;
+            }
+        }
+        
+        // ESC key to close modals
+        if (e.key === 'Escape') {
+            document.querySelectorAll('.modal').forEach(modal => {
+                if (modal.style.display === 'flex') {
+                    modal.style.display = 'none';
+                }
+            });
+            this.hideResponseSearch();
+        }
+        
+        // Question mark for shortcuts
+        if (e.key === '?') {
+            e.preventDefault();
+            document.getElementById('shortcutsModal').style.display = 'flex';
+        }
+    }
+    loadSharedRequest(requestData) {
+        // Load shared request data into the UI
+        document.getElementById('methodSelect').value = requestData.method || 'GET';
+        document.getElementById('urlInput').value = requestData.url || '';
+        document.getElementById('requestBody').value = requestData.body || '';
+        
+        // Load headers
+        if (requestData.headers) {
+            const headerRows = document.querySelectorAll('.header-row');
+            Object.entries(requestData.headers).forEach(([key, value], index) => {
+                if (index === 0) {
+                    headerRows[0].querySelector('.header-key').value = key;
+                    headerRows[0].querySelector('.header-value').value = value;
+                } else {
+                    this.addHeaderRow();
+                    const newRow = document.querySelectorAll('.header-row')[index];
+                    newRow.querySelector('.header-key').value = key;
+                    newRow.querySelector('.header-value').value = value;
+                }
+            });
+        }
+        
+        this.showNotification('Shared request loaded! 🔗', 'success');
+    }
 }
 
 // Initialize the app when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    window.app = new RESTerX();
+    const app = new RESTerX();
+    window.app = app;
+    
+    // Check for shared request in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const sharedRequest = urlParams.get('request');
+    if (sharedRequest) {
+        try {
+            const requestData = JSON.parse(atob(sharedRequest));
+            app.loadSharedRequest(requestData);
+        } catch (e) {
+            console.warn('Invalid shared request URL');
+        }
+    }
 });
