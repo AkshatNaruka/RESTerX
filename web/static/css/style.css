@@ -1382,6 +1382,20 @@ body {
         transform: translateY(-50%);
     }
     
+    /* Improve header layout on mobile */
+    .header {
+        padding: 1rem;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+    }
+    
+    .header-controls {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        width: 100%;
+        justify-content: space-between;
+    }
+    
     .main {
         padding: 1rem;
         gap: 1rem;
@@ -1479,11 +1493,42 @@ body {
         gap: 0.5rem;
         width: 100%;
         justify-content: space-between;
+        align-items: center;
     }
     
     .environment-select {
         flex: 1;
         min-width: 120px;
+        font-size: 0.9rem;
+        padding: 0.65rem;
+    }
+    
+    /* Improve button sizes and layout for mobile */
+    .env-btn, .settings-btn, .shortcuts-btn, .theme-btn {
+        padding: 0.65rem;
+        font-size: 0.9rem;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+    
+    /* Stack header elements better on smaller screens */
+    .header {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 0.75rem 1rem;
+    }
+    
+    .header h1 {
+        font-size: 1.4rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    .subtitle {
+        font-size: 0.85rem;
+        margin-bottom: 0.5rem;
     }
     
     .request-section {
@@ -1516,21 +1561,26 @@ body {
 /* Extra small devices (phones, 480px and down) */
 @media (max-width: 480px) {
     :root {
-        --sidebar-width: 280px;
-        --header-height: 75px;
+        --sidebar-width: 100%;
+        --header-height: 85px;
     }
     
     .container {
         gap: 0;
+        padding: 0;
     }
     
+    /* Improved header for very small screens */
     .header {
         padding: 0.75rem 1rem;
         min-height: var(--header-height);
+        background: var(--bg-card);
+        border-bottom: 1px solid var(--border-color);
     }
     
     .header h1 {
-        font-size: 1.25rem;
+        font-size: 1.3rem;
+        margin-bottom: 0.5rem;
     }
     
     .subtitle {
@@ -1538,22 +1588,34 @@ body {
     }
     
     .header-controls {
-        gap: 0.5rem;
+        gap: 0.4rem;
+        flex-wrap: wrap;
+        width: 100%;
     }
     
-    .env-btn, .theme-toggle, .shortcuts-btn {
-        padding: 0.5rem;
+    /* Make buttons more compact on small screens */
+    .env-btn, .settings-btn, .shortcuts-btn, .theme-btn {
+        padding: 0.5rem 0.7rem;
+        font-size: 0.85rem;
+        min-height: 40px;
+    }
+    
+    .environment-select {
+        flex: 1;
+        min-width: 100px;
         font-size: 0.9rem;
+        padding: 0.6rem;
     }
     
     .main {
-        padding: 0.75rem;
+        padding: 0.5rem;
         gap: 0.75rem;
     }
     
     .request-section, .response-section {
         padding: 0.75rem;
         border-radius: var(--border-radius-small);
+        margin: 0;
     }
     
     .request-line {
@@ -1582,8 +1644,10 @@ body {
     
     .mobile-sidebar-toggle {
         right: 0.75rem;
-        padding: 0.6rem;
-        font-size: 0.9rem;
+        padding: 0.65rem;
+        font-size: 1rem;
+        top: calc(var(--header-height) + 1rem);
+        transform: none;
     }
     
     /* Stack response info vertically on very small screens */
@@ -1600,6 +1664,31 @@ body {
     
     .response-time {
         font-size: 0.8rem;
+    }
+    
+    /* Improve performance analytics display on mobile */
+    .perf-stats-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+    }
+    
+    /* Better spacing for response tools on mobile */
+    .response-tools {
+        justify-content: flex-start;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    
+    /* Ensure all text inputs have proper mobile font size */
+    input[type="text"], 
+    input[type="url"], 
+    input[type="email"], 
+    input[type="password"], 
+    textarea, 
+    select {
+        font-size: 16px !important; /* Prevents zoom on iOS Safari */
+        -webkit-appearance: none;
+        border-radius: var(--border-radius);
     }
 }
 
