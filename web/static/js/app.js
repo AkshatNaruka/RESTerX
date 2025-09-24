@@ -43,6 +43,9 @@ class RESTerX {
         this.loadCollections();
         this.loadEnvironments();
         this.updateAnalytics();
+        
+        // Setup mobile enhancements
+        this.setupMobileEnhancements();
     }
 
     // Auto-login with demo account for API playground mode
@@ -2660,6 +2663,317 @@ class RESTerX {
         }
         
         this.showNotification('Shared request loaded! 🔗', 'success');
+    }
+
+    // Mobile-specific enhancements
+    setupMobileEnhancements() {
+        // Add touch event support for better mobile interaction
+        this.addTouchSupport();
+        
+        // Add mobile-specific keyboard shortcuts
+        this.addMobileKeyboardSupport();
+        
+        // Add mobile gesture support
+        this.addMobileGestureSupport();
+        
+        // Optimize for mobile viewport
+        this.optimizeMobileViewport();
+    }
+
+    addTouchSupport() {
+        // Add active states for touch devices
+        const touchElements = document.querySelectorAll('button, .tab-btn, .response-tab-btn, .quick-action-btn');
+        
+        touchElements.forEach(element => {
+            element.addEventListener('touchstart', () => {
+                element.classList.add('touch-active');
+            });
+            
+            element.addEventListener('touchend', () => {
+                setTimeout(() => {
+                    element.classList.remove('touch-active');
+                }, 150);
+            });
+        });
+    }
+
+    addMobileKeyboardSupport() {
+        // Handle virtual keyboard on mobile
+        const inputs = document.querySelectorAll('input, textarea');
+        
+        inputs.forEach(input => {
+            input.addEventListener('focus', () => {
+                // Scroll element into view when focused
+                setTimeout(() => {
+                    input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 300);
+            });
+        });
+    }
+
+    addMobileGestureSupport() {
+        // Add swipe support for sidebar
+        let startX = 0;
+        let startY = 0;
+        
+        document.addEventListener('touchstart', (e) => {
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+        });
+        
+        document.addEventListener('touchmove', (e) => {
+            if (!startX || !startY) return;
+            
+            const currentX = e.touches[0].clientX;
+            const currentY = e.touches[0].clientY;
+            
+            const diffX = startX - currentX;
+            const diffY = startY - currentY;
+            
+            // Only handle horizontal swipes
+            if (Math.abs(diffX) > Math.abs(diffY)) {
+                e.preventDefault();
+            }
+        });
+        
+        document.addEventListener('touchend', (e) => {
+            if (!startX || !startY) return;
+            
+            const endX = e.changedTouches[0].clientX;
+            const endY = e.changedTouches[0].clientY;
+            
+            const diffX = startX - endX;
+            const diffY = startY - endY;
+            
+            // Minimum swipe distance
+            if (Math.abs(diffX) > 50 && Math.abs(diffX) > Math.abs(diffY)) {
+                const sidebar = document.querySelector('.sidebar');
+                
+                if (diffX > 0 && sidebar.classList.contains('mobile-open')) {
+                    // Swipe left - close sidebar
+                    this.closeMobileSidebar();
+                } else if (diffX < 0 && !sidebar.classList.contains('mobile-open') && startX < 50) {
+                    // Swipe right from edge - open sidebar
+                    this.openMobileSidebar();
+                }
+            }
+            
+            startX = 0;
+            startY = 0;
+        });
+    }
+
+    optimizeMobileViewport() {
+        // Add meta viewport if not present
+        if (!document.querySelector('meta[name="viewport"]')) {
+            const viewport = document.createElement('meta');
+            viewport.name = 'viewport';
+            viewport.content = 'width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover';
+            document.head.appendChild(viewport);
+        }
+        
+        // Add PWA theme color
+        if (!document.querySelector('meta[name="theme-color"]')) {
+            const themeColor = document.createElement('meta');
+            themeColor.name = 'theme-color';
+            themeColor.content = '#1e90ff';
+            document.head.appendChild(themeColor);
+        }
+        
+        // Handle orientation changes
+        window.addEventListener('orientationchange', () => {
+            setTimeout(() => {
+                // Force layout recalculation
+                document.body.style.height = window.innerHeight + 'px';
+                setTimeout(() => {
+                    document.body.style.height = '';
+                }, 100);
+            }, 100);
+        });
+        
+        // Handle window resize for mobile keyboards
+        let initialHeight = window.innerHeight;
+        
+        window.addEventListener('resize', () => {
+            const currentHeight = window.innerHeight;
+            const heightDiff = initialHeight - currentHeight;
+            
+            // If height decreased significantly, likely virtual keyboard is open
+            if (heightDiff > 150) {
+                document.body.classList.add('keyboard-open');
+            } else {
+                document.body.classList.remove('keyboard-open');
+            }
+        });
+        
+        // Optimize for mobile performance
+        this.optimizeMobilePerformance();
+    }
+
+    optimizeMobilePerformance() {
+        // Debounce scroll events for better performance
+        let scrollTimeout;
+        const handleScroll = () => {
+            if (scrollTimeout) {
+                cancelAnimationFrame(scrollTimeout);
+            }
+            scrollTimeout = requestAnimationFrame(() => {
+                // Handle any scroll-related updates here
+                this.updateScrollPosition();
+            });
+        };
+        
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        
+        // Use passive event listeners for touch events
+        const touchElements = document.querySelectorAll('.tabs, .response-tabs, .quick-actions');
+        touchElements.forEach(element => {
+            element.addEventListener('touchstart', () => {}, { passive: true });
+            element.addEventListener('touchmove', () => {}, { passive: true });
+        });
+        
+        // Lazy load images and heavy content
+        this.lazyLoadContent();
+        
+        // Preload critical resources
+        this.preloadCriticalResources();
+    }
+
+    lazyLoadContent() {
+        // Use Intersection Observer for lazy loading if available
+        if ('IntersectionObserver' in window) {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        // Load content when it becomes visible
+                        const element = entry.target;
+                        if (element.dataset.src) {
+                            element.src = element.dataset.src;
+                            element.removeAttribute('data-src');
+                        }
+                        observer.unobserve(element);
+                    }
+                });
+            });
+            
+            // Observe elements that need lazy loading
+            const lazyElements = document.querySelectorAll('[data-src]');
+            lazyElements.forEach(element => observer.observe(element));
+        }
+    }
+
+    preloadCriticalResources() {
+        // Preload fonts and critical CSS
+        const criticalResources = [
+            'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap'
+        ];
+        
+        criticalResources.forEach(resource => {
+            const link = document.createElement('link');
+            link.rel = 'preload';
+            link.as = 'style';
+            link.href = resource;
+            document.head.appendChild(link);
+        });
+    }
+
+    updateScrollPosition() {
+        // Update UI based on scroll position if needed
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        const header = document.querySelector('.header');
+        
+        if (scrollTop > 100 && window.innerWidth <= 768) {
+            header.classList.add('scrolled');
+        } else {
+            header.classList.remove('scrolled');
+        }
+    }
+
+    // Enhanced mobile sidebar methods
+    openMobileSidebar() {
+        const sidebar = document.querySelector('.sidebar');
+        const overlay = document.getElementById('mobileOverlay');
+        const toggle = document.getElementById('mobileSidebarToggle');
+        
+        sidebar.classList.add('mobile-open');
+        overlay.classList.add('active');
+        toggle.innerHTML = '✕';
+        toggle.setAttribute('aria-label', 'Close Sidebar');
+        
+        // Prevent body scroll when sidebar is open
+        document.body.style.overflow = 'hidden';
+        
+        // Add animation class for better mobile experience
+        sidebar.style.transform = 'translateX(0)';
+        overlay.style.opacity = '1';
+    }
+
+    closeMobileSidebar() {
+        const sidebar = document.querySelector('.sidebar');
+        const overlay = document.getElementById('mobileOverlay');
+        const toggle = document.getElementById('mobileSidebarToggle');
+        
+        sidebar.classList.remove('mobile-open');
+        overlay.classList.remove('active');
+        toggle.innerHTML = '📋';
+        toggle.setAttribute('aria-label', 'Toggle Sidebar');
+        
+        // Restore body scroll
+        document.body.style.overflow = '';
+        
+        // Add animation for better mobile experience
+        sidebar.style.transform = 'translateX(100%)';
+        overlay.style.opacity = '0';
+    }
+
+    // Enhanced mobile notification system
+    showNotification(message, type = 'info') {
+        // Remove existing notifications
+        const existingNotifications = document.querySelectorAll('.notification');
+        existingNotifications.forEach(notification => notification.remove());
+
+        const notification = document.createElement('div');
+        notification.className = `notification notification-${type}`;
+        notification.innerHTML = `
+            <span class="notification-icon">
+                ${type === 'success' ? '✅' : type === 'error' ? '❌' : type === 'warning' ? '⚠️' : 'ℹ️'}
+            </span>
+            <span class="notification-message">${message}</span>
+            <button class="notification-close" onclick="this.parentElement.remove()">×</button>
+        `;
+
+        // Enhanced mobile styling
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border: 2px solid var(${type === 'success' ? '--success-color' : type === 'error' ? '--error-color' : type === 'warning' ? '--warning-color' : '--info-color'});
+            border-radius: var(--border-radius);
+            padding: 1rem;
+            box-shadow: var(--shadow-heavy);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            max-width: calc(100vw - 40px);
+            word-wrap: break-word;
+            transform: translateX(-50%) translateY(-100%);
+            transition: transform 0.3s ease;
+        `;
+
+        document.body.appendChild(notification);
+        
+        // Trigger animation
+        setTimeout(() => notification.style.transform = 'translateX(-50%) translateY(0)', 100);
+
+        // Auto-remove after 4 seconds
+        setTimeout(() => {
+            notification.style.transform = 'translateX(-50%) translateY(-100%)';
+            setTimeout(() => notification.remove(), 300);
+        }, 4000);
     }
 }
 
