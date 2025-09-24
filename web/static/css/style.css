@@ -2266,6 +2266,133 @@ body.keyboard-open .main {
     }
 }
 
+/* Progressive Web App (PWA) Support */
+@media (display-mode: standalone) {
+    .header {
+        padding-top: env(safe-area-inset-top);
+    }
+    
+    body {
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: env(safe-area-inset-bottom);
+        padding-left: env(safe-area-inset-left);
+        padding-right: env(safe-area-inset-right);
+    }
+}
+
+/* Dark mode mobile optimizations */
+@media (max-width: 768px) and (prefers-color-scheme: dark) {
+    .quick-action-btn {
+        background: var(--bg-tertiary);
+        border-color: var(--border-light);
+    }
+    
+    .quick-action-btn.primary {
+        background: var(--primary-color);
+        box-shadow: 0 2px 8px rgba(30, 144, 255, 0.3);
+    }
+    
+    .mobile-sidebar-toggle {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .sidebar,
+    .mobile-overlay,
+    .quick-action-btn,
+    .tab-btn,
+    .response-tab-btn {
+        transition: none !important;
+        animation: none !important;
+    }
+    
+    .touch-active {
+        transform: none !important;
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .quick-action-btn,
+    .tab-btn,
+    .response-tab-btn {
+        border-width: 2px;
+        border-style: solid;
+    }
+    
+    .quick-action-btn.primary {
+        border-color: var(--primary-color);
+    }
+}
+
+/* Mobile landscape optimizations */
+@media (max-width: 768px) and (orientation: landscape) {
+    .header {
+        padding: 0.5rem 1rem;
+        min-height: 60px;
+    }
+    
+    .header h1 {
+        font-size: 1.1rem;
+    }
+    
+    .quick-action-bar {
+        padding: 0.375rem;
+    }
+    
+    .quick-action-btn {
+        min-height: 40px;
+        min-width: 40px;
+        padding: 0.375rem;
+    }
+    
+    .main {
+        padding: 0.375rem;
+    }
+    
+    .request-section,
+    .response-section {
+        padding: 0.75rem;
+    }
+}
+
+/* Ultra-wide mobile screens */
+@media (max-width: 768px) and (min-aspect-ratio: 2/1) {
+    .quick-actions {
+        justify-content: center;
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    
+    .request-line {
+        max-width: 600px;
+        margin: 0 auto 1rem;
+    }
+}
+
+/* Tablet portrait optimizations */
+@media (min-width: 769px) and (max-width: 1024px) and (orientation: portrait) {
+    .sidebar {
+        width: 280px;
+    }
+    
+    .mobile-sidebar-toggle {
+        right: 1.5rem;
+        top: 40%;
+    }
+    
+    .main {
+        padding: 1.5rem;
+    }
+    
+    .quick-action-btn {
+        min-width: 52px;
+        min-height: 52px;
+    }
+}
+
 /* Mobile focus states */
 @media (max-width: 768px) {
     input:focus,
@@ -2281,6 +2408,61 @@ body.keyboard-open .main {
     textarea:focus {
         position: relative;
         z-index: 10;
+    }
+}
+
+/* Performance optimizations for mobile */
+@media (max-width: 768px) {
+    /* Use GPU acceleration for animations */
+    .sidebar,
+    .mobile-overlay,
+    .quick-action-btn,
+    .mobile-sidebar-toggle {
+        will-change: transform, opacity;
+        transform: translateZ(0);
+    }
+    
+    /* Optimize scrolling performance */
+    .main,
+    .sidebar,
+    .tabs,
+    .response-tabs {
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+    }
+    
+    /* Reduce repaints */
+    .quick-action-btn,
+    .tab-btn,
+    .response-tab-btn {
+        backface-visibility: hidden;
+    }
+    
+    /* Scrolled header state */
+    .header.scrolled {
+        box-shadow: var(--shadow-medium);
+        backdrop-filter: blur(10px);
+        background: rgba(255, 255, 255, 0.95);
+    }
+    
+    [data-theme="dark"] .header.scrolled {
+        background: rgba(15, 23, 42, 0.95);
+    }
+}
+
+/* Print styles - hide mobile-specific elements */
+@media print {
+    .mobile-sidebar-toggle,
+    .mobile-overlay,
+    .quick-action-bar,
+    .user-bar {
+        display: none !important;
+    }
+    
+    .sidebar {
+        position: static !important;
+        transform: none !important;
+        box-shadow: none !important;
     }
 }
 

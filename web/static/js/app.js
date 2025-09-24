@@ -2768,8 +2768,16 @@ class RESTerX {
         if (!document.querySelector('meta[name="viewport"]')) {
             const viewport = document.createElement('meta');
             viewport.name = 'viewport';
-            viewport.content = 'width=device-width, initial-scale=1.0, user-scalable=no';
+            viewport.content = 'width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover';
             document.head.appendChild(viewport);
+        }
+        
+        // Add PWA theme color
+        if (!document.querySelector('meta[name="theme-color"]')) {
+            const themeColor = document.createElement('meta');
+            themeColor.name = 'theme-color';
+            themeColor.content = '#1e90ff';
+            document.head.appendChild(themeColor);
         }
         
         // Handle orientation changes
@@ -2797,6 +2805,88 @@ class RESTerX {
                 document.body.classList.remove('keyboard-open');
             }
         });
+        
+        // Optimize for mobile performance
+        this.optimizeMobilePerformance();
+    }
+
+    optimizeMobilePerformance() {
+        // Debounce scroll events for better performance
+        let scrollTimeout;
+        const handleScroll = () => {
+            if (scrollTimeout) {
+                cancelAnimationFrame(scrollTimeout);
+            }
+            scrollTimeout = requestAnimationFrame(() => {
+                // Handle any scroll-related updates here
+                this.updateScrollPosition();
+            });
+        };
+        
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        
+        // Use passive event listeners for touch events
+        const touchElements = document.querySelectorAll('.tabs, .response-tabs, .quick-actions');
+        touchElements.forEach(element => {
+            element.addEventListener('touchstart', () => {}, { passive: true });
+            element.addEventListener('touchmove', () => {}, { passive: true });
+        });
+        
+        // Lazy load images and heavy content
+        this.lazyLoadContent();
+        
+        // Preload critical resources
+        this.preloadCriticalResources();
+    }
+
+    lazyLoadContent() {
+        // Use Intersection Observer for lazy loading if available
+        if ('IntersectionObserver' in window) {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        // Load content when it becomes visible
+                        const element = entry.target;
+                        if (element.dataset.src) {
+                            element.src = element.dataset.src;
+                            element.removeAttribute('data-src');
+                        }
+                        observer.unobserve(element);
+                    }
+                });
+            });
+            
+            // Observe elements that need lazy loading
+            const lazyElements = document.querySelectorAll('[data-src]');
+            lazyElements.forEach(element => observer.observe(element));
+        }
+    }
+
+    preloadCriticalResources() {
+        // Preload fonts and critical CSS
+        const criticalResources = [
+            'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap'
+        ];
+        
+        criticalResources.forEach(resource => {
+            const link = document.createElement('link');
+            link.rel = 'preload';
+            link.as = 'style';
+            link.href = resource;
+            document.head.appendChild(link);
+        });
+    }
+
+    updateScrollPosition() {
+        // Update UI based on scroll position if needed
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        const header = document.querySelector('.header');
+        
+        if (scrollTop > 100 && window.innerWidth <= 768) {
+            header.classList.add('scrolled');
+        } else {
+            header.classList.remove('scrolled');
+        }
     }
 
     // Enhanced mobile sidebar methods
