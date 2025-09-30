@@ -46,3 +46,7 @@ _site/
 *.db
 *.sqlite
 *.sqlite3
+
+# Node.js dependencies for test-api
+test-api/node_modules/
+test-api/package-lock.json
