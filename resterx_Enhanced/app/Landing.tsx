@@ -1,10 +1,19 @@
+"use client"
+
 import Link from "next/link"
+import { useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
 import { Zap, Code, History, Sparkles, Lock, Globe, Terminal, Layers, ArrowRight, Check } from "lucide-react"
 
 export default function LandingPage() {
+  // Ensure dark theme is set
+  useEffect(() => {
+    document.documentElement.classList.add("dark")
+    document.documentElement.style.colorScheme = "dark"
+  }, [])
+
   return (
     <div className="min-h-screen bg-black text-white">
       {/* Header */}
@@ -13,7 +22,7 @@ export default function LandingPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Sparkles className="w-6 h-6 text-cyan-400" />
-              <span className="text-xl font-bold tracking-tight">RESTerX</span>
+              <span className="text-xl font-bold tracking-tight text-white">RESTerX</span>
             </div>
             <nav className="hidden md:flex items-center gap-8">
               <a href="#features" className="text-sm text-gray-400 hover:text-white transition-colors">
@@ -41,7 +50,7 @@ export default function LandingPage() {
             Now available for teams
           </Badge>
 
-          <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight text-balance leading-[1.1]">
+          <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight text-balance leading-[1.1] text-white">
             The complete platform to test APIs.
           </h1>
 
@@ -78,19 +87,19 @@ export default function LandingPage() {
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-white/10">
             <div className="py-12 px-6 text-center">
-              <div className="text-4xl md:text-5xl font-bold mb-2">10ms</div>
+              <div className="text-4xl md:text-5xl font-bold mb-2 text-white">10ms</div>
               <div className="text-gray-400 text-sm">average response time</div>
             </div>
             <div className="py-12 px-6 text-center">
-              <div className="text-4xl md:text-5xl font-bold mb-2">99.9%</div>
+              <div className="text-4xl md:text-5xl font-bold mb-2 text-white">99.9%</div>
               <div className="text-gray-400 text-sm">uptime guarantee</div>
             </div>
             <div className="py-12 px-6 text-center">
-              <div className="text-4xl md:text-5xl font-bold mb-2">50+</div>
+              <div className="text-4xl md:text-5xl font-bold mb-2 text-white">50+</div>
               <div className="text-gray-400 text-sm">API templates included</div>
             </div>
             <div className="py-12 px-6 text-center">
-              <div className="text-4xl md:text-5xl font-bold mb-2">5</div>
+              <div className="text-4xl md:text-5xl font-bold mb-2 text-white">5</div>
               <div className="text-gray-400 text-sm">languages for code export</div>
             </div>
           </div>
@@ -101,7 +110,7 @@ export default function LandingPage() {
       <section id="features" className="container mx-auto px-4 py-24 md:py-32">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold mb-4 text-balance">Everything you need to ship faster.</h2>
+            <h2 className="text-4xl md:text-5xl font-bold mb-4 text-balance text-white">Everything you need to ship faster.</h2>
             <p className="text-xl text-gray-400 max-w-2xl mx-auto text-balance">
               Professional API testing tools designed for modern development teams.
             </p>
@@ -112,7 +121,7 @@ export default function LandingPage() {
               <div className="w-12 h-12 rounded-lg bg-cyan-500/10 flex items-center justify-center mb-6">
                 <Zap className="w-6 h-6 text-cyan-400" />
               </div>
-              <h3 className="text-xl font-semibold mb-3">Lightning Fast</h3>
+              <h3 className="text-xl font-semibold mb-3 text-white">Lightning Fast</h3>
               <p className="text-gray-400 leading-relaxed">
                 Send requests in milliseconds with optimized performance and real-time response tracking.
               </p>
@@ -122,7 +131,7 @@ export default function LandingPage() {
               <div className="w-12 h-12 rounded-lg bg-purple-500/10 flex items-center justify-center mb-6">
                 <Code className="w-6 h-6 text-purple-400" />
               </div>
-              <h3 className="text-xl font-semibold mb-3">Code Generation</h3>
+              <h3 className="text-xl font-semibold mb-3 text-white">Code Generation</h3>
               <p className="text-gray-400 leading-relaxed">
                 Export requests to cURL, JavaScript, Python, Go, and more with one click.
               </p>
@@ -132,7 +141,7 @@ export default function LandingPage() {
               <div className="w-12 h-12 rounded-lg bg-blue-500/10 flex items-center justify-center mb-6">
                 <History className="w-6 h-6 text-blue-400" />
               </div>
-              <h3 className="text-xl font-semibold mb-3">Request History</h3>
+              <h3 className="text-xl font-semibold mb-3 text-white">Request History</h3>
               <p className="text-gray-400 leading-relaxed">
                 Never lose a request. Automatic history tracking with search and filtering.
               </p>
@@ -142,7 +151,7 @@ export default function LandingPage() {
               <div className="w-12 h-12 rounded-lg bg-green-500/10 flex items-center justify-center mb-6">
                 <Lock className="w-6 h-6 text-green-400" />
               </div>
-              <h3 className="text-xl font-semibold mb-3">Authentication</h3>
+              <h3 className="text-xl font-semibold mb-3 text-white">Authentication</h3>
               <p className="text-gray-400 leading-relaxed">
                 Built-in support for Bearer tokens, Basic Auth, and custom headers.
               </p>
@@ -152,7 +161,7 @@ export default function LandingPage() {
               <div className="w-12 h-12 rounded-lg bg-orange-500/10 flex items-center justify-center mb-6">
                 <Globe className="w-6 h-6 text-orange-400" />
               </div>
-              <h3 className="text-xl font-semibold mb-3">API Templates</h3>
+              <h3 className="text-xl font-semibold mb-3 text-white">API Templates</h3>
               <p className="text-gray-400 leading-relaxed">
                 Pre-configured templates for popular APIs like GitHub, Stripe, and more.
               </p>
@@ -162,7 +171,7 @@ export default function LandingPage() {
               <div className="w-12 h-12 rounded-lg bg-pink-500/10 flex items-center justify-center mb-6">
                 <Layers className="w-6 h-6 text-pink-400" />
               </div>
-              <h3 className="text-xl font-semibold mb-3">Collections</h3>
+              <h3 className="text-xl font-semibold mb-3 text-white">Collections</h3>
               <p className="text-gray-400 leading-relaxed">
                 Organize requests into collections for better project management.
               </p>
@@ -180,7 +189,7 @@ export default function LandingPage() {
                 <Terminal className="w-3 h-3 mr-2" />
                 Developer Experience
               </Badge>
-              <h2 className="text-4xl md:text-5xl font-bold text-balance">Built for developers who ship.</h2>
+              <h2 className="text-4xl md:text-5xl font-bold text-balance text-white">Built for developers who ship.</h2>
               <p className="text-xl text-gray-400 leading-relaxed">
                 Keyboard shortcuts, instant code generation, and a clean interface that gets out of your way. Focus on
                 building, not configuring.
@@ -247,7 +256,7 @@ export default function LandingPage() {
       <section className="container mx-auto px-4 py-24 md:py-32">
         <Card className="bg-gradient-to-br from-cyan-500/10 to-purple-500/10 border-white/10 p-12 md:p-16 text-center">
           <div className="max-w-3xl mx-auto space-y-6">
-            <h2 className="text-4xl md:text-5xl font-bold text-balance">Ready to ship faster?</h2>
+            <h2 className="text-4xl md:text-5xl font-bold text-balance text-white">Ready to ship faster?</h2>
             <p className="text-xl text-gray-400 text-balance">
               Join thousands of developers building better APIs with RESTerX.
             </p>
@@ -275,7 +284,7 @@ export default function LandingPage() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-cyan-400" />
-              <span className="font-bold">RESTerX</span>
+              <span className="font-bold text-white">RESTerX</span>
             </div>
             <div className="flex items-center gap-8 text-sm text-gray-400">
               <a href="#" className="hover:text-white transition-colors">
