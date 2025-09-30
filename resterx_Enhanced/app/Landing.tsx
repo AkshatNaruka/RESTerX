@@ -287,12 +287,12 @@ export default function LandingPage() {
               <span className="font-bold text-white">RESTerX</span>
             </div>
             <div className="flex items-center gap-8 text-sm text-gray-400">
-              <a href="#" className="hover:text-white transition-colors">
+              {/* <a href="#" className="hover:text-white transition-colors">
                 Documentation
               </a>
               <a href="#" className="hover:text-white transition-colors">
                 GitHub
-              </a>
+              </a> */}
               <a href="#" className="hover:text-white transition-colors">
                 Support
               </a>
