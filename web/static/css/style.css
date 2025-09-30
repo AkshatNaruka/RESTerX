@@ -125,6 +125,12 @@ body {
     display: none;
 }
 
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
 .header h1 {
     color: var(--text-primary);
     font-size: 1.5rem;
@@ -134,6 +140,17 @@ body {
     gap: 0.5rem;
     text-shadow: none;
     letter-spacing: -0.02em;
+    margin: 0;
+}
+
+.subtitle-badge {
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    font-weight: 500;
+    background: var(--bg-secondary);
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    border: 1px solid var(--border-color);
 }
 
 .subtitle {
@@ -150,16 +167,16 @@ body {
 .header-controls {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.5rem;
 }
 
 .environment-select {
-    padding: 0.6rem 1rem;
-    border: 2px solid var(--border-color);
-    border-radius: var(--border-radius);
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-small);
     background: var(--bg-primary);
     color: var(--text-primary);
-    font-size: 0.9rem;
+    font-size: 0.875rem;
     transition: all var(--transition-fast);
     min-width: 150px;
 }
@@ -167,69 +184,70 @@ body {
 .environment-select:focus {
     outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+    box-shadow: var(--shadow-glow);
 }
 
-.env-btn {
-    background: var(--secondary-color);
-    color: white;
-    border: none;
-    padding: 0.6rem 1.2rem;
-    border-radius: var(--border-radius);
+.env-btn, .settings-btn {
+    background: transparent;
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--border-radius-small);
     cursor: pointer;
-    font-weight: 600;
+    font-weight: 500;
+    font-size: 0.875rem;
     transition: all var(--transition-fast);
     display: flex;
     align-items: center;
     gap: 0.5rem;
 }
 
-.env-btn:hover {
-    background: var(--secondary-hover);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-medium);
+.env-btn:hover, .settings-btn:hover {
+    background: var(--bg-tertiary);
+    transform: none;
+    box-shadow: none;
 }
 
 .shortcuts-btn {
-    background: var(--info-color);
-    color: white;
-    border: none;
-    padding: 0.6rem;
+    background: transparent;
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    padding: 0.5rem;
     border-radius: var(--border-radius-small);
     cursor: pointer;
-    font-size: 1.2rem;
+    font-size: 1rem;
     transition: all var(--transition-fast);
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 44px;
-    height: 44px;
+    width: 36px;
+    height: 36px;
 }
 
 .shortcuts-btn:hover {
-    background: var(--info-hover);
-    transform: translateY(-2px) scale(1.1);
-    box-shadow: var(--shadow-medium);
+    background: var(--bg-tertiary);
+    transform: none;
+    box-shadow: none;
 }
 
 .theme-btn {
-    background: var(--bg-primary);
-    border: 2px solid var(--border-color);
-    padding: 0.6rem;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    padding: 0.5rem;
     border-radius: var(--border-radius-small);
     cursor: pointer;
-    font-size: 1.3rem;
+    font-size: 1rem;
     transition: all var(--transition-fast);
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 44px;
-    height: 44px;
+    width: 36px;
+    height: 36px;
 }
 
 .theme-btn:hover {
-    border-color: var(--primary-color);
-    transform: translateY(-2px) rotate(10deg);
+    background: var(--bg-tertiary);
+    transform: none;
     box-shadow: var(--shadow-medium);
 }
 
