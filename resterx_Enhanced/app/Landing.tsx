@@ -296,9 +296,9 @@ export default function LandingPage() {
               <a href="#" className="hover:text-white transition-colors">
                 Support
               </a>
-              <a href="#" className="hover:text-white transition-colors">
+              {/* <a href="#" className="hover:text-white transition-colors">
                 Privacy
-              </a>
+              </a> */}
             </div>
             <div className="text-sm text-gray-500">© 2025 RESTerX. All rights reserved.</div>
           </div>
