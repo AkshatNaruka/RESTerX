@@ -717,11 +717,12 @@ body {
 
 .tabs {
     display: flex;
-    background: var(--bg-secondary);
-    border-radius: var(--border-radius);
-    padding: 0.5rem;
-    margin-bottom: 2rem;
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+    background: transparent;
+    border-radius: 0;
+    padding: 0;
+    margin-bottom: 1.5rem;
+    box-shadow: none;
+    border-bottom: 1px solid var(--border-color);
 }
 
 .tab-btn {
@@ -730,25 +731,25 @@ body {
     border: none;
     color: var(--text-secondary);
     cursor: pointer;
-    font-weight: 600;
-    font-size: 0.9rem;
+    font-weight: 500;
+    font-size: 0.875rem;
     transition: all var(--transition-fast);
     border-radius: var(--border-radius-small);
     position: relative;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    text-transform: none;
+    letter-spacing: 0;
     display: flex;
     align-items: center;
     gap: 0.5rem;
 }
 
 .tab-icon {
-    font-size: 1.1rem;
+    font-size: 1rem;
     transition: transform var(--transition-fast);
 }
 
 .tab-btn:hover .tab-icon {
-    transform: scale(1.2) rotate(5deg);
+    transform: none;
 }
 
 .tab-btn::before {
@@ -765,18 +766,18 @@ body {
 
 .tab-btn.active {
     color: var(--primary-color);
-    background: var(--bg-primary);
-    box-shadow: var(--shadow-light);
+    background: transparent;
+    box-shadow: none;
 }
 
 .tab-btn.active::before {
-    width: 80%;
+    width: 100%;
 }
 
 .tab-btn:hover {
     color: var(--text-primary);
-    background: var(--bg-primary);
-    transform: translateY(-1px);
+    background: var(--bg-tertiary);
+    transform: none;
 }
 
 .tab-content {
@@ -1032,11 +1033,12 @@ body {
 
 .response-tabs {
     display: flex;
-    background: var(--bg-secondary);
-    border-radius: var(--border-radius);
-    padding: 0.5rem;
+    background: transparent;
+    border-radius: 0;
+    padding: 0;
     margin-bottom: 1.5rem;
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: none;
+    border-bottom: 1px solid var(--border-color);
 }
 
 .response-tab-btn {
@@ -1045,12 +1047,12 @@ body {
     border: none;
     color: var(--text-secondary);
     cursor: pointer;
-    font-weight: 600;
-    font-size: 0.85rem;
+    font-weight: 500;
+    font-size: 0.875rem;
     transition: all var(--transition-fast);
     border-radius: var(--border-radius-small);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    text-transform: none;
+    letter-spacing: 0;
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -1058,14 +1060,14 @@ body {
 
 .response-tab-btn.active {
     color: var(--primary-color);
-    background: var(--bg-primary);
-    box-shadow: var(--shadow-light);
+    background: transparent;
+    box-shadow: none;
 }
 
 .response-tab-btn:hover {
     color: var(--text-primary);
-    background: var(--bg-primary);
-    transform: translateY(-1px);
+    background: var(--bg-tertiary);
+    transform: none;
 }
 
 .response-content {
