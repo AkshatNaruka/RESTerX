@@ -46,3 +46,12 @@ _site/
 *.db
 *.sqlite
 *.sqlite3
+
+# Next.js / React (resterx_Enhanced)
+resterx_Enhanced/node_modules/
+resterx_Enhanced/.next/
+resterx_Enhanced/out/
+resterx_Enhanced/.vercel/
+resterx_Enhanced/.env*
+resterx_Enhanced/*.tsbuildinfo
+resterx_Enhanced/next-env.d.ts

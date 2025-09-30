@@ -4,7 +4,7 @@ RESTerX is a powerful API testing tool that supports both command-line interface
 
 ## ✨ Features
 
-### 🖥️ Web Interface
+### 🖥️ Web Interface (Go-based)
 - **Modern Postman-like Interface**: Clean, intuitive design for easy API testing
 - **Dark/Light Theme**: Toggle between themes with persistent settings
 - **Request History**: Automatic saving of requests using browser localStorage
@@ -15,6 +15,19 @@ RESTerX is a powerful API testing tool that supports both command-line interface
 - **Real-time Response**: Status codes, response time, and detailed headers
 - **Responsive Design**: Works on desktop, tablet, and mobile devices
 
+### ⚛️ React Version (Next.js)
+- **Enhanced UI/UX**: Built with Next.js, React 18, and TypeScript
+- **Modern Component Library**: Powered by Radix UI and Tailwind CSS
+- **Advanced Features**: 
+  - Code generation in multiple languages (cURL, JavaScript, Python, Go)
+  - Request collections and organization
+  - Environment variables support
+  - Pre-request scripts and dynamic variables
+  - Keyboard shortcuts for productivity
+  - Export/import functionality
+- **Optimized Performance**: Fast page loads and smooth interactions
+- **Fully Client-Side**: No backend required, runs entirely in the browser
+
 ### 🖥️ CLI Interface
 - **Interactive Menu**: Easy-to-use command-line interface
 - **All HTTP Methods**: GET, POST, PUT, PATCH, HEAD, DELETE support
@@ -22,7 +35,9 @@ RESTerX is a powerful API testing tool that supports both command-line interface
 
 ## 🚀 Installation
 
-To install RESTerX, you need to have Go installed on your machine. Once you have Go installed, you can clone this repository and build the project:
+### Option 1: Go-based Web Interface (with CLI)
+
+To install RESTerX CLI and Go-based web interface, you need to have Go installed on your machine. Once you have Go installed, you can clone this repository and build the project:
 
 ```bash
 git clone https://github.com/AkshatNaruka/RESTerX
@@ -32,9 +47,52 @@ go build -o restcli ./cmd
 
 This will create an executable file in your project directory.
 
+### Option 2: React Version (Next.js)
+
+To run the enhanced React version locally:
+
+```bash
+git clone https://github.com/AkshatNaruka/RESTerX
+cd RESTerX/resterx_Enhanced
+npm install
+npm run dev
+```
+
+Then open your browser and navigate to `http://localhost:3000`.
+
 ## 📖 Usage
 
-### Web Interface (Recommended)
+### React Version (Recommended)
+
+The enhanced React version is available at `resterx_Enhanced/` and provides the most feature-rich experience:
+
+**Development:**
+```bash
+cd resterx_Enhanced
+npm run dev
+```
+
+**Production Build:**
+```bash
+cd resterx_Enhanced
+npm run build
+npm start
+```
+
+#### React Version Features:
+1. **Select HTTP Method**: Choose from GET, POST, PUT, PATCH, DELETE, HEAD
+2. **Enter URL**: Type your API endpoint with autocomplete
+3. **Add Headers**: Dynamic header management
+4. **Set Request Body**: Multiple body types with syntax highlighting
+5. **Configure Auth**: Bearer token or Basic authentication
+6. **Send Request**: Keyboard shortcuts available (⌘↵)
+7. **View Response**: Detailed status, headers, and formatted body
+8. **History**: Track all requests with filtering options
+9. **Collections**: Organize requests into collections
+10. **Code Generation**: Generate code snippets in multiple languages
+11. **Environment Variables**: Manage different environments
+
+### Go-based Web Interface
 
 Start the web server:
 ```bash
@@ -77,12 +135,14 @@ This will start an interactive menu where you can select the HTTP method you wan
 
 ## 🎯 Key Benefits
 
+- **Two Powerful Versions**: Choose between Go-based or modern React implementation
 - **No Data Storage Required**: All user data stored in browser localStorage
-- **Privacy Focused**: No data sent to external servers
-- **Fast and Lightweight**: Built with Go for optimal performance
+- **Privacy Focused**: No data sent to external servers (fully client-side)
+- **Fast and Lightweight**: Optimized performance for quick API testing
 - **User Friendly**: Postman-like interface with modern design
 - **Local & Online API Testing**: Test localhost and remote APIs seamlessly
-- **Cross-platform**: Web interface works on any device with a browser
+- **Cross-platform**: Works on any device with a browser
+- **Easy Deployment**: Deploy to Vercel with one click or use static hosting
 
 ## 🔧 Development
 
@@ -94,22 +154,63 @@ To contribute to RESTerX:
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 🚀 Static Site Deployment
+## 🚀 Deployment
 
-RESTerX includes automatic deployment of the web interface as a static site to GitHub Pages. The deployment workflow is triggered automatically on pushes to the main branch.
+### Deploy React Version to Vercel (Recommended)
 
-### How it works:
+The React version (`resterx_Enhanced/`) is optimized for deployment on Vercel:
+
+#### One-Click Deploy
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/AkshatNaruka/RESTerX&project-name=resterx&repository-name=resterx&root-directory=resterx_Enhanced)
+
+#### Manual Deploy
+
+1. Install Vercel CLI:
+   ```bash
+   npm i -g vercel
+   ```
+
+2. Navigate to the React app directory:
+   ```bash
+   cd resterx_Enhanced
+   ```
+
+3. Deploy to Vercel:
+   ```bash
+   vercel
+   ```
+
+4. Follow the prompts to configure your deployment
+
+#### Deploy via Vercel Dashboard
+
+1. Push your code to GitHub
+2. Visit [Vercel Dashboard](https://vercel.com/dashboard)
+3. Click "New Project"
+4. Import your GitHub repository
+5. Set the **Root Directory** to `resterx_Enhanced`
+6. Vercel will auto-detect Next.js and configure the build settings
+7. Click "Deploy"
+
+Your app will be live at `https://your-project.vercel.app`
+
+### Static Site Deployment (Go-based Version)
+
+RESTerX includes automatic deployment of the Go-based web interface as a static site to GitHub Pages. The deployment workflow is triggered automatically on pushes to the main branch.
+
+#### How it works:
 - The GitHub Actions workflow copies the static files from `web/static/` directory
 - Deploys them to GitHub Pages for easy access without running a local server
 - The static site provides basic HTTP request testing functionality for external APIs
 
-### Limitations of Static Deployment:
+#### Limitations of Static Deployment:
 - Mock server features require the backend API
 - Code generation features require the backend API  
 - History and collections are stored locally in browser storage
 - All other HTTP testing features work normally
 
-### Accessing the Static Site:
+#### Accessing the Static Site:
 Once deployed, the static site will be available at: `https://{username}.github.io/{repository-name}/`
 
 ## 📝 API Endpoints
