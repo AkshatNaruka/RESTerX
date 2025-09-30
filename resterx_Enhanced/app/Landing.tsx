@@ -25,15 +25,15 @@ export default function LandingPage() {
               <span className="text-xl font-bold tracking-tight text-white">RESTerX</span>
             </div>
             <nav className="hidden md:flex items-center gap-8">
-              <a href="#features" className="text-sm text-gray-400 hover:text-white transition-colors">
+              {/* <a href="#features" className="text-sm text-gray-400 hover:text-white transition-colors">
                 Features
-              </a>
-              <a href="#templates" className="text-sm text-gray-400 hover:text-white transition-colors">
+              </a> */}
+              {/* <a href="#templates" className="text-sm text-gray-400 hover:text-white transition-colors">
                 Templates
               </a>
               <a href="#pricing" className="text-sm text-gray-400 hover:text-white transition-colors">
                 Pricing
-              </a>
+              </a> */}
             </nav>
             <Link href="/app">
               <Button className="bg-white text-black hover:bg-gray-200">Launch App</Button>
@@ -65,20 +65,20 @@ export default function LandingPage() {
                 Get Started Free
               </Button>
             </Link>
-            <Button
+            {/* <Button
               size="lg"
               variant="outline"
               className="border-white/20 text-white hover:bg-white/10 text-base px-8 py-6 h-auto bg-transparent"
             >
               View Documentation
-            </Button>
+            </Button> */}
           </div>
 
-          <div className="pt-8 text-sm text-gray-500">
+          {/* <div className="pt-8 text-sm text-gray-500">
             <kbd className="bg-white/5 border border-white/10 px-2 py-1 rounded text-xs">⌘</kbd>
             <kbd className="bg-white/5 border border-white/10 px-2 py-1 rounded text-xs ml-1">K</kbd>
             <span className="ml-2">to quick start</span>
-          </div>
+          </div> */}
         </div>
       </section>
 
@@ -266,13 +266,13 @@ export default function LandingPage() {
                   Start Testing APIs
                 </Button>
               </Link>
-              <Button
+              {/* <Button
                 size="lg"
                 variant="outline"
                 className="border-white/20 text-white hover:bg-white/10 text-base px-8 py-6 h-auto bg-transparent"
               >
                 View on GitHub
-              </Button>
+              </Button> */}
             </div>
           </div>
         </Card>
