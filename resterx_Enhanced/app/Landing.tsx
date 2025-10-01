@@ -25,15 +25,15 @@ export default function LandingPage() {
               <span className="text-xl font-bold tracking-tight text-white">RESTerX</span>
             </div>
             <nav className="hidden md:flex items-center gap-8">
-              {/* <a href="#features" className="text-sm text-gray-400 hover:text-white transition-colors">
+              <a href="#features" className="text-sm text-gray-400 hover:text-white transition-colors">
                 Features
-              </a> */}
-              {/* <a href="#templates" className="text-sm text-gray-400 hover:text-white transition-colors">
-                Templates
               </a>
-              <a href="#pricing" className="text-sm text-gray-400 hover:text-white transition-colors">
+              <Link href="/docs" className="text-sm text-gray-400 hover:text-white transition-colors">
+                Documentation
+              </Link>
+              <Link href="/pricing" className="text-sm text-gray-400 hover:text-white transition-colors">
                 Pricing
-              </a> */}
+              </Link>
             </nav>
             <Link href="/app">
               <Button className="bg-white text-black hover:bg-gray-200">Launch App</Button>
@@ -65,13 +65,15 @@ export default function LandingPage() {
                 Get Started Free
               </Button>
             </Link>
-            {/* <Button
-              size="lg"
-              variant="outline"
-              className="border-white/20 text-white hover:bg-white/10 text-base px-8 py-6 h-auto bg-transparent"
-            >
-              View Documentation
-            </Button> */}
+            <Link href="/docs">
+              <Button
+                size="lg"
+                variant="outline"
+                className="border-white/20 text-white hover:bg-white/10 text-base px-8 py-6 h-auto bg-transparent"
+              >
+                View Documentation
+              </Button>
+            </Link>
           </div>
 
           {/* <div className="pt-8 text-sm text-gray-500">
@@ -266,13 +268,15 @@ export default function LandingPage() {
                   Start Testing APIs
                 </Button>
               </Link>
-              {/* <Button
-                size="lg"
-                variant="outline"
-                className="border-white/20 text-white hover:bg-white/10 text-base px-8 py-6 h-auto bg-transparent"
-              >
-                View on GitHub
-              </Button> */}
+              <Link href="https://github.com/AkshatNaruka/RESTerX" target="_blank" rel="noopener noreferrer">
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="border-white/20 text-white hover:bg-white/10 text-base px-8 py-6 h-auto bg-transparent"
+                >
+                  View on GitHub
+                </Button>
+              </Link>
             </div>
           </div>
         </Card>
@@ -287,18 +291,18 @@ export default function LandingPage() {
               <span className="font-bold text-white">RESTerX</span>
             </div>
             <div className="flex items-center gap-8 text-sm text-gray-400">
-              {/* <a href="#" className="hover:text-white transition-colors">
+              <Link href="/docs" className="hover:text-white transition-colors">
                 Documentation
-              </a>
-              <a href="#" className="hover:text-white transition-colors">
+              </Link>
+              <Link href="https://github.com/AkshatNaruka/RESTerX" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
                 GitHub
-              </a> */}
-              <a href="#" className="hover:text-white transition-colors">
+              </Link>
+              <Link href="/support" className="hover:text-white transition-colors">
                 Support
-              </a>
-              {/* <a href="#" className="hover:text-white transition-colors">
+              </Link>
+              <Link href="/privacy" className="hover:text-white transition-colors">
                 Privacy
-              </a> */}
+              </Link>
             </div>
             <div className="text-sm text-gray-500">© 2025 RESTerX. All rights reserved.</div>
           </div>
