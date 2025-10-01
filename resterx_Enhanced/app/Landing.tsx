@@ -35,9 +35,14 @@ export default function LandingPage() {
                 Pricing
               </Link>
             </nav>
-            <Link href="/app">
-              <Button className="bg-white text-black hover:bg-gray-200">Launch App</Button>
-            </Link>
+            <div className="flex items-center gap-3">
+              <Link href="/auth/signin">
+                <Button variant="ghost" className="text-white hover:bg-white/10">Sign In</Button>
+              </Link>
+              <Link href="/app">
+                <Button className="bg-white text-black hover:bg-gray-200">Launch App</Button>
+              </Link>
+            </div>
           </div>
         </div>
       </header>
