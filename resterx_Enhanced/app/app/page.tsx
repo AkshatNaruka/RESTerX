@@ -57,11 +57,25 @@ interface ResponseData {
   error?: boolean
 }
 
+interface SavedRequest {
+  id: string
+  name: string
+  method: string
+  url: string
+  headers: Record<string, string>
+  body: string
+  authType: string
+  bearerToken?: string
+  basicUsername?: string
+  basicPassword?: string
+  createdAt: string
+}
+
 interface Collection {
   id: number
   name: string
   description: string
-  requests: any[]
+  requests: SavedRequest[]
 }
 
 const API_TEMPLATES = {
@@ -150,11 +164,20 @@ export default function RESTerXApp() {
   const [jsonExpanded, setJsonExpanded] = useState(true)
   const [historyFilter, setHistoryFilter] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
+  const [showCollectionModal, setShowCollectionModal] = useState(false)
+  const [newCollectionName, setNewCollectionName] = useState("")
+  const [newCollectionDescription, setNewCollectionDescription] = useState("")
+  const [showSaveToCollectionModal, setShowSaveToCollectionModal] = useState(false)
+  const [selectedCollectionId, setSelectedCollectionId] = useState<number | null>(null)
+  const [requestName, setRequestName] = useState("")
+  const [expandedCollectionId, setExpandedCollectionId] = useState<number | null>(null)
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", theme === "dark")
+  }, [theme])
 
-    // Load from localStorage
+  useEffect(() => {
+    // Load from localStorage on mount
     const savedHistory = localStorage.getItem("resterx-history")
     if (savedHistory) {
       setHistory(JSON.parse(savedHistory))
@@ -164,7 +187,7 @@ export default function RESTerXApp() {
     if (savedCollections) {
       setCollections(JSON.parse(savedCollections))
     }
-  }, [theme])
+  }, [])
 
   useEffect(() => {
     // Save history to localStorage
@@ -237,6 +260,114 @@ export default function RESTerXApp() {
       setBody(template.body)
       setBodyType(template.body ? "json" : "none")
     }
+  }
+
+  const createCollection = () => {
+    if (!newCollectionName.trim()) {
+      alert("Please enter a collection name")
+      return
+    }
+
+    const newCollection: Collection = {
+      id: Date.now(),
+      name: newCollectionName.trim(),
+      description: newCollectionDescription.trim(),
+      requests: [],
+    }
+
+    setCollections([...collections, newCollection])
+    setShowCollectionModal(false)
+    setNewCollectionName("")
+    setNewCollectionDescription("")
+    setSidebarTab("collections")
+  }
+
+  const saveToCollection = () => {
+    if (!url) {
+      alert("Please enter a URL to save")
+      return
+    }
+
+    if (!requestName.trim()) {
+      alert("Please enter a request name")
+      return
+    }
+
+    if (selectedCollectionId === null) {
+      alert("Please select a collection")
+      return
+    }
+
+    // Convert headers array to object
+    const headersObj: Record<string, string> = {}
+    headers.forEach((header) => {
+      if (header.key && header.value) {
+        headersObj[header.key] = header.value
+      }
+    })
+
+    const savedRequest: SavedRequest = {
+      id: `req_${Date.now()}`,
+      name: requestName.trim(),
+      method: method,
+      url: url,
+      headers: headersObj,
+      body: body,
+      authType: authType,
+      bearerToken: authType === "bearer" ? bearerToken : undefined,
+      basicUsername: authType === "basic" ? basicUsername : undefined,
+      basicPassword: authType === "basic" ? basicPassword : undefined,
+      createdAt: new Date().toISOString(),
+    }
+
+    // Find the collection and add the request
+    const updatedCollections = collections.map((collection) => {
+      if (collection.id === selectedCollectionId) {
+        return {
+          ...collection,
+          requests: [...collection.requests, savedRequest],
+        }
+      }
+      return collection
+    })
+
+    setCollections(updatedCollections)
+    setShowSaveToCollectionModal(false)
+    setRequestName("")
+    setSelectedCollectionId(null)
+    setSidebarTab("collections")
+  }
+
+  const loadSavedRequest = (request: SavedRequest) => {
+    // Set the method
+    setMethod(request.method)
+    
+    // Set the URL
+    setUrl(request.url)
+    
+    // Convert headers from object to array format
+    const headersArray: HeaderItem[] = Object.entries(request.headers).map(([key, value]) => ({
+      key,
+      value,
+    }))
+    setHeaders(headersArray.length > 0 ? headersArray : [{ key: "", value: "" }])
+    
+    // Set the body
+    setBody(request.body)
+    setBodyType(request.body ? "json" : "none")
+    
+    // Set auth type and credentials
+    setAuthType(request.authType as "none" | "bearer" | "basic")
+    if (request.authType === "bearer" && request.bearerToken) {
+      setBearerToken(request.bearerToken)
+    } else if (request.authType === "basic") {
+      setBasicUsername(request.basicUsername || "")
+      setBasicPassword(request.basicPassword || "")
+    }
+  }
+
+  const toggleCollection = (collectionId: number) => {
+    setExpandedCollectionId(expandedCollectionId === collectionId ? null : collectionId)
   }
 
   const sendRequest = async () => {
@@ -639,7 +770,12 @@ func main() {
                   ⌘↵
                 </kbd>
               </Button>
-              <Button variant="outline" size="icon" title="Save to Collection">
+              <Button 
+                variant="outline" 
+                size="icon" 
+                title="Save to Collection"
+                onClick={() => setShowSaveToCollectionModal(true)}
+              >
                 <Save className="w-4 h-4" />
               </Button>
               <Dialog open={showCodeExport} onOpenChange={setShowCodeExport}>
@@ -1096,11 +1232,80 @@ func main() {
 
                 <TabsContent value="collections" className="mt-4">
                   <div className="space-y-2">
-                    <Button variant="outline" size="sm" className="w-full gap-2 bg-transparent">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full gap-2 bg-transparent"
+                      onClick={() => setShowCollectionModal(true)}
+                    >
                       <Plus className="w-3 h-3" />
                       New Collection
                     </Button>
-                    <p className="text-sm text-muted-foreground text-center py-8">No saved collections</p>
+                    {collections.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-8">No saved collections</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {collections.map((collection) => (
+                          <div
+                            key={collection.id}
+                            className="rounded-lg border border-border overflow-hidden"
+                          >
+                            <div
+                              className="p-3 hover:bg-accent/50 cursor-pointer transition-colors"
+                              onClick={() => toggleCollection(collection.id)}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex-1">
+                                  <h4 className="font-medium text-sm mb-1">{collection.name}</h4>
+                                  {collection.description && (
+                                    <p className="text-xs text-muted-foreground mb-2">{collection.description}</p>
+                                  )}
+                                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                    <Folder className="w-3 h-3" />
+                                    <span>{collection.requests?.length || 0} requests</span>
+                                  </div>
+                                </div>
+                                {expandedCollectionId === collection.id ? (
+                                  <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                                ) : (
+                                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                                )}
+                              </div>
+                            </div>
+                            
+                            {expandedCollectionId === collection.id && collection.requests.length > 0 && (
+                              <div className="border-t border-border bg-muted/20">
+                                {collection.requests.map((request) => (
+                                  <div
+                                    key={request.id}
+                                    className="px-4 py-2 hover:bg-accent/50 cursor-pointer transition-colors border-b border-border/50 last:border-b-0"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      loadSavedRequest(request)
+                                    }}
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      <Badge 
+                                        variant="outline" 
+                                        className="text-xs font-mono px-1.5 py-0"
+                                      >
+                                        {request.method}
+                                      </Badge>
+                                      <span className="text-sm font-medium truncate flex-1">
+                                        {request.name}
+                                      </span>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground truncate mt-1 pl-12">
+                                      {request.url}
+                                    </p>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </TabsContent>
               </Tabs>
@@ -1108,6 +1313,121 @@ func main() {
           </div>
         </div>
       </div>
+
+      {/* Collection Creation Dialog */}
+      <Dialog open={showCollectionModal} onOpenChange={setShowCollectionModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create New Collection</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label htmlFor="collection-name" className="text-sm font-medium">
+                Collection Name <span className="text-red-500">*</span>
+              </label>
+              <Input
+                id="collection-name"
+                placeholder="e.g., My API Collection"
+                value={newCollectionName}
+                onChange={(e) => setNewCollectionName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="collection-description" className="text-sm font-medium">
+                Description
+              </label>
+              <Textarea
+                id="collection-description"
+                placeholder="Optional description for this collection"
+                value={newCollectionDescription}
+                onChange={(e) => setNewCollectionDescription(e.target.value)}
+                rows={3}
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setShowCollectionModal(false)}>
+              Cancel
+            </Button>
+            <Button onClick={createCollection}>
+              Create Collection
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Save to Collection Dialog */}
+      <Dialog open={showSaveToCollectionModal} onOpenChange={setShowSaveToCollectionModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Save Request to Collection</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label htmlFor="request-name" className="text-sm font-medium">
+                Request Name <span className="text-red-500">*</span>
+              </label>
+              <Input
+                id="request-name"
+                placeholder="e.g., Get User Profile"
+                value={requestName}
+                onChange={(e) => setRequestName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="select-collection" className="text-sm font-medium">
+                Select Collection <span className="text-red-500">*</span>
+              </label>
+              {collections.length === 0 ? (
+                <div className="text-sm text-muted-foreground">
+                  No collections available. Create a collection first.
+                </div>
+              ) : (
+                <Select
+                  value={selectedCollectionId?.toString() || ""}
+                  onValueChange={(value) => setSelectedCollectionId(Number(value))}
+                >
+                  <SelectTrigger id="select-collection">
+                    <SelectValue placeholder="Choose a collection" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {collections.map((collection) => (
+                      <SelectItem key={collection.id} value={collection.id.toString()}>
+                        {collection.name} ({collection.requests?.length || 0} requests)
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+            <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-lg">
+              <div className="font-medium mb-1">Request Details:</div>
+              <div className="space-y-1">
+                <div><span className="font-medium">Method:</span> {method}</div>
+                <div><span className="font-medium">URL:</span> {url || "Not set"}</div>
+                {authType !== "none" && (
+                  <div><span className="font-medium">Auth:</span> {authType}</div>
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowSaveToCollectionModal(false)
+                setRequestName("")
+                setSelectedCollectionId(null)
+              }}
+            >
+              Cancel
+            </Button>
+            <Button onClick={saveToCollection} disabled={collections.length === 0}>
+              Save Request
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Loading Overlay */}
       {loading && (
