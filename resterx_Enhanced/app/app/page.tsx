@@ -241,51 +241,7 @@ export default function RESTerXApp() {
     localStorage.setItem("resterx-collections", JSON.stringify(collections))
   }, [collections])
 
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Skip shortcuts if we're in an input or textarea except for specific exceptions
-      if ((e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).tagName === 'TEXTAREA') {
-        // Still allow Cmd+S even in input/textarea
-        if (!((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s")) {
-          return;
-        }
-      }
-      
-      // Cmd/Ctrl + Enter: Send request
-      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
-        e.preventDefault()
-        sendRequest()
-      }
-      
-      // Cmd/Ctrl + K: Focus URL
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
-        e.preventDefault()
-        document.getElementById("url-input")?.focus()
-      }
-      
-      // Cmd/Ctrl + S: Save to collection
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {
-        e.preventDefault()
-        setShowSaveToCollectionModal(true)
-      }
-      
-      // Cmd/Ctrl + H: Toggle history
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "h") {
-        e.preventDefault()
-        setSidebarTab("history")
-      }
-      
-      // ?: Show shortcuts
-      if (e.key === "?" && !e.metaKey && !e.ctrlKey) {
-        e.preventDefault()
-        setShowShortcuts(true)
-      }
-    }
-
-    window.addEventListener("keydown", handleKeyDown)
-    return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [])
+  // Keyboard shortcuts will be moved after the sendRequest function to fix dependency issues
 
   const toggleTheme = () => {
     setTheme((prev) => (prev === "light" ? "dark" : "light"))
@@ -695,6 +651,52 @@ export default function RESTerXApp() {
       setLoading(false)
     }
   }
+
+  // Keyboard shortcuts - moved after sendRequest function to fix dependency issues
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Skip shortcuts if we're in an input or textarea except for specific exceptions
+      if ((e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).tagName === 'TEXTAREA') {
+        // Still allow Cmd+S even in input/textarea
+        if (!((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s")) {
+          return;
+        }
+      }
+      
+      // Cmd/Ctrl + Enter: Send request
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+        e.preventDefault()
+        sendRequest()
+      }
+      
+      // Cmd/Ctrl + K: Focus URL
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault()
+        document.getElementById("url-input")?.focus()
+      }
+      
+      // Cmd/Ctrl + S: Save to collection
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {
+        e.preventDefault()
+        setShowSaveToCollectionModal(true)
+      }
+      
+      // Cmd/Ctrl + H: Toggle history
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "h") {
+        e.preventDefault()
+        setSidebarTab("history")
+      }
+      
+      // ?: Show shortcuts
+      if (e.key === "?" && !e.metaKey && !e.ctrlKey) {
+        e.preventDefault()
+        setShowShortcuts(true)
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [sendRequest, setShowSaveToCollectionModal, setSidebarTab, setShowShortcuts])
 
   const formatJson = () => {
     if (response?.body) {
