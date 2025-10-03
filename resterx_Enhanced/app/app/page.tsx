@@ -57,11 +57,25 @@ interface ResponseData {
   error?: boolean
 }
 
+interface SavedRequest {
+  id: string
+  name: string
+  method: string
+  url: string
+  headers: Record<string, string>
+  body: string
+  authType: string
+  bearerToken?: string
+  basicUsername?: string
+  basicPassword?: string
+  createdAt: string
+}
+
 interface Collection {
   id: number
   name: string
   description: string
-  requests: any[]
+  requests: SavedRequest[]
 }
 
 const API_TEMPLATES = {
@@ -153,6 +167,9 @@ export default function RESTerXApp() {
   const [showCollectionModal, setShowCollectionModal] = useState(false)
   const [newCollectionName, setNewCollectionName] = useState("")
   const [newCollectionDescription, setNewCollectionDescription] = useState("")
+  const [showSaveToCollectionModal, setShowSaveToCollectionModal] = useState(false)
+  const [selectedCollectionId, setSelectedCollectionId] = useState<number | null>(null)
+  const [requestName, setRequestName] = useState("")
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", theme === "dark")
@@ -261,6 +278,62 @@ export default function RESTerXApp() {
     setShowCollectionModal(false)
     setNewCollectionName("")
     setNewCollectionDescription("")
+    setSidebarTab("collections")
+  }
+
+  const saveToCollection = () => {
+    if (!url) {
+      alert("Please enter a URL to save")
+      return
+    }
+
+    if (!requestName.trim()) {
+      alert("Please enter a request name")
+      return
+    }
+
+    if (selectedCollectionId === null) {
+      alert("Please select a collection")
+      return
+    }
+
+    // Convert headers array to object
+    const headersObj: Record<string, string> = {}
+    headers.forEach((header) => {
+      if (header.key && header.value) {
+        headersObj[header.key] = header.value
+      }
+    })
+
+    const savedRequest: SavedRequest = {
+      id: `req_${Date.now()}`,
+      name: requestName.trim(),
+      method: method,
+      url: url,
+      headers: headersObj,
+      body: body,
+      authType: authType,
+      bearerToken: authType === "bearer" ? bearerToken : undefined,
+      basicUsername: authType === "basic" ? basicUsername : undefined,
+      basicPassword: authType === "basic" ? basicPassword : undefined,
+      createdAt: new Date().toISOString(),
+    }
+
+    // Find the collection and add the request
+    const updatedCollections = collections.map((collection) => {
+      if (collection.id === selectedCollectionId) {
+        return {
+          ...collection,
+          requests: [...collection.requests, savedRequest],
+        }
+      }
+      return collection
+    })
+
+    setCollections(updatedCollections)
+    setShowSaveToCollectionModal(false)
+    setRequestName("")
+    setSelectedCollectionId(null)
     setSidebarTab("collections")
   }
 
@@ -664,7 +737,12 @@ func main() {
                   ⌘↵
                 </kbd>
               </Button>
-              <Button variant="outline" size="icon" title="Save to Collection">
+              <Button 
+                variant="outline" 
+                size="icon" 
+                title="Save to Collection"
+                onClick={() => setShowSaveToCollectionModal(true)}
+              >
                 <Save className="w-4 h-4" />
               </Button>
               <Dialog open={showCodeExport} onOpenChange={setShowCodeExport}>
@@ -1196,6 +1274,79 @@ func main() {
             </Button>
             <Button onClick={createCollection}>
               Create Collection
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Save to Collection Dialog */}
+      <Dialog open={showSaveToCollectionModal} onOpenChange={setShowSaveToCollectionModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Save Request to Collection</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label htmlFor="request-name" className="text-sm font-medium">
+                Request Name <span className="text-red-500">*</span>
+              </label>
+              <Input
+                id="request-name"
+                placeholder="e.g., Get User Profile"
+                value={requestName}
+                onChange={(e) => setRequestName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="select-collection" className="text-sm font-medium">
+                Select Collection <span className="text-red-500">*</span>
+              </label>
+              {collections.length === 0 ? (
+                <div className="text-sm text-muted-foreground">
+                  No collections available. Create a collection first.
+                </div>
+              ) : (
+                <Select
+                  value={selectedCollectionId?.toString() || ""}
+                  onValueChange={(value) => setSelectedCollectionId(Number(value))}
+                >
+                  <SelectTrigger id="select-collection">
+                    <SelectValue placeholder="Choose a collection" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {collections.map((collection) => (
+                      <SelectItem key={collection.id} value={collection.id.toString()}>
+                        {collection.name} ({collection.requests?.length || 0} requests)
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+            <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-lg">
+              <div className="font-medium mb-1">Request Details:</div>
+              <div className="space-y-1">
+                <div><span className="font-medium">Method:</span> {method}</div>
+                <div><span className="font-medium">URL:</span> {url || "Not set"}</div>
+                {authType !== "none" && (
+                  <div><span className="font-medium">Auth:</span> {authType}</div>
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowSaveToCollectionModal(false)
+                setRequestName("")
+                setSelectedCollectionId(null)
+              }}
+            >
+              Cancel
+            </Button>
+            <Button onClick={saveToCollection} disabled={collections.length === 0}>
+              Save Request
             </Button>
           </div>
         </DialogContent>
