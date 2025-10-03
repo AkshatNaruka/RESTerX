@@ -170,6 +170,7 @@ export default function RESTerXApp() {
   const [showSaveToCollectionModal, setShowSaveToCollectionModal] = useState(false)
   const [selectedCollectionId, setSelectedCollectionId] = useState<number | null>(null)
   const [requestName, setRequestName] = useState("")
+  const [expandedCollectionId, setExpandedCollectionId] = useState<number | null>(null)
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", theme === "dark")
@@ -335,6 +336,38 @@ export default function RESTerXApp() {
     setRequestName("")
     setSelectedCollectionId(null)
     setSidebarTab("collections")
+  }
+
+  const loadSavedRequest = (request: SavedRequest) => {
+    // Set the method
+    setMethod(request.method)
+    
+    // Set the URL
+    setUrl(request.url)
+    
+    // Convert headers from object to array format
+    const headersArray: HeaderItem[] = Object.entries(request.headers).map(([key, value]) => ({
+      key,
+      value,
+    }))
+    setHeaders(headersArray.length > 0 ? headersArray : [{ key: "", value: "" }])
+    
+    // Set the body
+    setBody(request.body)
+    setBodyType(request.body ? "json" : "none")
+    
+    // Set auth type and credentials
+    setAuthType(request.authType as "none" | "bearer" | "basic")
+    if (request.authType === "bearer" && request.bearerToken) {
+      setBearerToken(request.bearerToken)
+    } else if (request.authType === "basic") {
+      setBasicUsername(request.basicUsername || "")
+      setBasicPassword(request.basicPassword || "")
+    }
+  }
+
+  const toggleCollection = (collectionId: number) => {
+    setExpandedCollectionId(expandedCollectionId === collectionId ? null : collectionId)
   }
 
   const sendRequest = async () => {
@@ -1215,16 +1248,60 @@ func main() {
                         {collections.map((collection) => (
                           <div
                             key={collection.id}
-                            className="p-3 rounded-lg border border-border hover:bg-accent/50 cursor-pointer transition-colors"
+                            className="rounded-lg border border-border overflow-hidden"
                           >
-                            <h4 className="font-medium text-sm mb-1">{collection.name}</h4>
-                            {collection.description && (
-                              <p className="text-xs text-muted-foreground mb-2">{collection.description}</p>
-                            )}
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                              <Folder className="w-3 h-3" />
-                              <span>{collection.requests?.length || 0} requests</span>
+                            <div
+                              className="p-3 hover:bg-accent/50 cursor-pointer transition-colors"
+                              onClick={() => toggleCollection(collection.id)}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex-1">
+                                  <h4 className="font-medium text-sm mb-1">{collection.name}</h4>
+                                  {collection.description && (
+                                    <p className="text-xs text-muted-foreground mb-2">{collection.description}</p>
+                                  )}
+                                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                    <Folder className="w-3 h-3" />
+                                    <span>{collection.requests?.length || 0} requests</span>
+                                  </div>
+                                </div>
+                                {expandedCollectionId === collection.id ? (
+                                  <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                                ) : (
+                                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                                )}
+                              </div>
                             </div>
+                            
+                            {expandedCollectionId === collection.id && collection.requests.length > 0 && (
+                              <div className="border-t border-border bg-muted/20">
+                                {collection.requests.map((request) => (
+                                  <div
+                                    key={request.id}
+                                    className="px-4 py-2 hover:bg-accent/50 cursor-pointer transition-colors border-b border-border/50 last:border-b-0"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      loadSavedRequest(request)
+                                    }}
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      <Badge 
+                                        variant="outline" 
+                                        className="text-xs font-mono px-1.5 py-0"
+                                      >
+                                        {request.method}
+                                      </Badge>
+                                      <span className="text-sm font-medium truncate flex-1">
+                                        {request.name}
+                                      </span>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground truncate mt-1 pl-12">
+                                      {request.url}
+                                    </p>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
