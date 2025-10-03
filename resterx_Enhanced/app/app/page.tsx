@@ -244,26 +244,38 @@ export default function RESTerXApp() {
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Skip shortcuts if we're in an input or textarea except for specific exceptions
+      if ((e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).tagName === 'TEXTAREA') {
+        // Still allow Cmd+S even in input/textarea
+        if (!((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s")) {
+          return;
+        }
+      }
+      
       // Cmd/Ctrl + Enter: Send request
       if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
         e.preventDefault()
         sendRequest()
       }
+      
       // Cmd/Ctrl + K: Focus URL
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault()
         document.getElementById("url-input")?.focus()
       }
+      
       // Cmd/Ctrl + S: Save to collection
-      if ((e.metaKey || e.ctrlKey) && e.key === "s") {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {
         e.preventDefault()
-        // Open save dialog
+        setShowSaveToCollectionModal(true)
       }
+      
       // Cmd/Ctrl + H: Toggle history
-      if ((e.metaKey || e.ctrlKey) && e.key === "h") {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "h") {
         e.preventDefault()
         setSidebarTab("history")
       }
+      
       // ?: Show shortcuts
       if (e.key === "?" && !e.metaKey && !e.ctrlKey) {
         e.preventDefault()
@@ -273,7 +285,7 @@ export default function RESTerXApp() {
 
     window.addEventListener("keydown", handleKeyDown)
     return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [url, method, headers, body])
+  }, [])
 
   const toggleTheme = () => {
     setTheme((prev) => (prev === "light" ? "dark" : "light"))
@@ -998,7 +1010,7 @@ func main() {
               <Button 
                 variant="outline" 
                 size="icon" 
-                title="Save to Collection"
+                title="Save to Collection (⌘S)"
                 onClick={() => setShowSaveToCollectionModal(true)}
               >
                 <Save className="w-4 h-4" />
@@ -1132,9 +1144,17 @@ func main() {
                     value={url}
                     onChange={(e) => setUrl(e.target.value)}
                     onKeyDown={(e) => {
+                      // Handle Enter key for sending request
                       if (e.key === "Enter" && !e.shiftKey) {
                         e.preventDefault()
                         sendRequest()
+                      }
+                      
+                      // Allow Cmd+S to be handled by the global handler
+                      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {
+                        e.preventDefault()
+                        setShowSaveToCollectionModal(true)
+                        return;
                       }
                     }}
                     className="flex-1 font-mono text-sm"
