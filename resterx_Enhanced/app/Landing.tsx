@@ -5,7 +5,7 @@ import { useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
-import { Zap, Code, History, Sparkles, Lock, Globe, Terminal, Layers, ArrowRight, Check } from "lucide-react"
+import { Zap, Code, History, Sparkles, Lock, Globe, Terminal, Layers, ArrowRight, Check, Upload, FileJson } from "lucide-react"
 
 export default function LandingPage() {
   // Ensure dark theme is set
@@ -35,9 +35,11 @@ export default function LandingPage() {
                 Pricing
               </a> */}
             </nav>
-            <Link href="/app">
-              <Button className="bg-white text-black hover:bg-gray-200">Launch App</Button>
-            </Link>
+            <div className="flex items-center gap-3">
+              <Link href="/app">
+                <Button className="bg-white text-black hover:bg-gray-200">Launch App</Button>
+              </Link>
+            </div>
           </div>
         </div>
       </header>
@@ -95,7 +97,7 @@ export default function LandingPage() {
               <div className="text-gray-400 text-sm">uptime guarantee</div>
             </div>
             <div className="py-12 px-6 text-center">
-              <div className="text-4xl md:text-5xl font-bold mb-2 text-white">50+</div>
+              <div className="text-4xl md:text-5xl font-bold mb-2 text-white">8+</div>
               <div className="text-gray-400 text-sm">API templates included</div>
             </div>
             <div className="py-12 px-6 text-center">
@@ -164,6 +166,16 @@ export default function LandingPage() {
               <h3 className="text-xl font-semibold mb-3 text-white">API Templates</h3>
               <p className="text-gray-400 leading-relaxed">
                 Pre-configured templates for popular APIs like GitHub, Stripe, and more.
+              </p>
+            </Card>
+
+            <Card className="bg-white/5 border-white/10 p-8 hover:bg-white/10 transition-colors">
+              <div className="w-12 h-12 rounded-lg bg-teal-500/10 flex items-center justify-center mb-6">
+                <FileJson className="w-6 h-6 text-teal-400" />
+              </div>
+              <h3 className="text-xl font-semibold mb-3 text-white">Import & Export Collections</h3>
+              <p className="text-gray-400 leading-relaxed">
+                Import and export collections in JSON format for easy sharing and backup.
               </p>
             </Card>
 

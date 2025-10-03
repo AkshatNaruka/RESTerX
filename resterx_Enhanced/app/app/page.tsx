@@ -30,6 +30,8 @@ import {
   Minimize2,
   Folder,
   ArrowLeft,
+  FileJson,
+  Upload,
 } from "lucide-react"
 import Link from "next/link"
 
@@ -76,6 +78,44 @@ interface Collection {
   name: string
   description: string
   requests: SavedRequest[]
+}
+
+interface PostmanCollection {
+  info: {
+    name: string
+    description?: string
+    schema: string
+  }
+  item: PostmanItem[]
+}
+
+interface PostmanItem {
+  name: string
+  request: {
+    method: string
+    url: {
+      raw: string
+      host?: string[]
+      path?: string[]
+      query?: Array<{ key: string, value: string }>
+    }
+    header?: Array<{ key: string, value: string }>
+    body?: {
+      mode?: string
+      raw?: string
+      options?: {
+        raw?: {
+          language: string
+        }
+      }
+    }
+    auth?: {
+      type: string
+      bearer?: Array<{ key: string, value: string, type: string }>
+      basic?: Array<{ key: string, value: string, type: string }>
+    }
+  }
+  response?: any[]
 }
 
 const API_TEMPLATES = {
@@ -168,6 +208,8 @@ export default function RESTerXApp() {
   const [newCollectionName, setNewCollectionName] = useState("")
   const [newCollectionDescription, setNewCollectionDescription] = useState("")
   const [showSaveToCollectionModal, setShowSaveToCollectionModal] = useState(false)
+  const [showImportCollectionModal, setShowImportCollectionModal] = useState(false)
+  const [importError, setImportError] = useState<string | null>(null)
   const [selectedCollectionId, setSelectedCollectionId] = useState<number | null>(null)
   const [requestName, setRequestName] = useState("")
   const [expandedCollectionId, setExpandedCollectionId] = useState<number | null>(null)
@@ -365,9 +407,192 @@ export default function RESTerXApp() {
       setBasicPassword(request.basicPassword || "")
     }
   }
+  
+  const handleImportCollection = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setImportError(null)
+    const file = event.target.files?.[0]
+    if (!file) return
+    
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result as string
+        const jsonData = JSON.parse(content)
+        
+        // Check if this is a valid collection format (either Postman or RESTerX)
+        if (!jsonData.info || !jsonData.info.name || !jsonData.item) {
+          setImportError("Invalid collection format")
+          return
+        }
+        
+        // Convert collection to RESTerX collection
+        const newCollection: Collection = {
+          id: Date.now(),
+          name: jsonData.info.name,
+          description: jsonData.info.description || "",
+          requests: [],
+        }
+        
+        // Convert each item in the collection
+        jsonData.item.forEach((item: any) => {
+          if (!item.request) return
+          
+          // Extract URL
+          let url = ""
+          if (typeof item.request.url === "string") {
+            url = item.request.url
+          } else if (item.request.url.raw) {
+            url = item.request.url.raw
+          }
+          
+          // Extract headers
+          const headers: Record<string, string> = {}
+          if (item.request.header) {
+            item.request.header.forEach((h: any) => {
+              if (h.key && h.value) {
+                headers[h.key] = h.value
+              }
+            })
+          }
+          
+          // Extract body
+          let body = ""
+          let authType: "none" | "bearer" | "basic" = "none"
+          let bearerToken = ""
+          let basicUsername = ""
+          let basicPassword = ""
+          
+          if (item.request.body) {
+            if (item.request.body.mode === "raw" && item.request.body.raw) {
+              body = item.request.body.raw
+            } else if (typeof item.request.body === "string") {
+              // Handle case where body might be directly a string
+              body = item.request.body
+            }
+          }
+          
+          // Extract auth
+          if (item.request.auth) {
+            if (item.request.auth.type === "bearer") {
+              authType = "bearer"
+              const tokenItem = item.request.auth.bearer?.find((item: any) => item.key === "token")
+              if (tokenItem) {
+                bearerToken = tokenItem.value
+              }
+            } else if (item.request.auth.type === "basic") {
+              authType = "basic"
+              const usernameItem = item.request.auth.basic?.find((item: any) => item.key === "username")
+              const passwordItem = item.request.auth.basic?.find((item: any) => item.key === "password")
+              if (usernameItem) basicUsername = usernameItem.value
+              if (passwordItem) basicPassword = passwordItem.value
+            }
+          }
+          
+          // Create saved request
+          const savedRequest: SavedRequest = {
+            id: `req_${Date.now()}_${newCollection.requests.length}`,
+            name: item.name,
+            method: item.request.method || "GET",
+            url,
+            headers,
+            body,
+            authType,
+            bearerToken: authType === "bearer" ? bearerToken : undefined,
+            basicUsername: authType === "basic" ? basicUsername : undefined,
+            basicPassword: authType === "basic" ? basicPassword : undefined,
+            createdAt: new Date().toISOString(),
+          }
+          
+          newCollection.requests.push(savedRequest)
+        })
+        
+        // Add the new collection
+        setCollections([...collections, newCollection])
+        setShowImportCollectionModal(false)
+        setSidebarTab("collections")
+        
+        // Reset the file input
+        event.target.value = ""
+        
+      } catch (error) {
+        console.error("Import error:", error)
+        setImportError("Failed to parse collection file. Please make sure it's a valid collection JSON.")
+      }
+    }
+    reader.readAsText(file)
+  }
 
   const toggleCollection = (collectionId: number) => {
     setExpandedCollectionId(expandedCollectionId === collectionId ? null : collectionId)
+  }
+
+  const exportCollection = (collection: Collection) => {
+    // Convert RESTerX collection to a more standard format that's similar to Postman
+    const exportData = {
+      info: {
+        name: collection.name,
+        description: collection.description,
+        schema: "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+      },
+      item: collection.requests.map(req => {
+        // Convert headers from object to array format
+        const headerArray = Object.entries(req.headers).map(([key, value]) => ({
+          key,
+          value,
+          type: "text"
+        }))
+
+        // Handle authentication
+        let auth = null
+        if (req.authType === "bearer" && req.bearerToken) {
+          auth = {
+            type: "bearer",
+            bearer: [{ key: "token", value: req.bearerToken, type: "string" }]
+          }
+        } else if (req.authType === "basic" && req.basicUsername) {
+          auth = {
+            type: "basic",
+            basic: [
+              { key: "username", value: req.basicUsername, type: "string" },
+              { key: "password", value: req.basicPassword || "", type: "string" }
+            ]
+          }
+        }
+
+        return {
+          name: req.name,
+          request: {
+            method: req.method,
+            url: {
+              raw: req.url,
+              protocol: req.url.startsWith("https") ? "https" : "http",
+              host: req.url.replace(/^https?:\/\//, "").split("/")[0].split("."),
+              path: req.url.replace(/^https?:\/\/[^/]+/, "").split("/").filter(p => p)
+            },
+            header: headerArray,
+            body: req.body ? {
+              mode: "raw",
+              raw: req.body,
+              options: {
+                raw: {
+                  language: "json"
+                }
+              }
+            } : undefined,
+            auth
+          }
+        }
+      })
+    }
+
+    // Create a JSON blob and trigger download
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = `${collection.name.replace(/\s+/g, "_").toLowerCase()}_collection.json`
+    a.click()
+    URL.revokeObjectURL(url)
   }
 
   const sendRequest = async () => {
@@ -1232,15 +1457,26 @@ func main() {
 
                 <TabsContent value="collections" className="mt-4">
                   <div className="space-y-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="w-full gap-2 bg-transparent"
-                      onClick={() => setShowCollectionModal(true)}
-                    >
-                      <Plus className="w-3 h-3" />
-                      New Collection
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="flex-1 gap-2 bg-transparent"
+                        onClick={() => setShowCollectionModal(true)}
+                      >
+                        <Plus className="w-3 h-3" />
+                        New Collection
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 gap-2 bg-transparent"
+                        onClick={() => setShowImportCollectionModal(true)}
+                      >
+                        <Upload className="w-3 h-3" />
+                        Import Collection
+                      </Button>
+                    </div>
                     {collections.length === 0 ? (
                       <p className="text-sm text-muted-foreground text-center py-8">No saved collections</p>
                     ) : (
@@ -1265,11 +1501,25 @@ func main() {
                                     <span>{collection.requests?.length || 0} requests</span>
                                   </div>
                                 </div>
-                                {expandedCollectionId === collection.id ? (
-                                  <ChevronDown className="w-4 h-4 text-muted-foreground" />
-                                ) : (
-                                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                                )}
+                                <div className="flex items-center">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="w-6 h-6 rounded-full"
+                                    title="Export Collection"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      exportCollection(collection);
+                                    }}
+                                  >
+                                    <Download className="w-3 h-3" />
+                                  </Button>
+                                  {expandedCollectionId === collection.id ? (
+                                    <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                                  ) : (
+                                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                                  )}
+                                </div>
                               </div>
                             </div>
                             
@@ -1429,6 +1679,57 @@ func main() {
         </DialogContent>
       </Dialog>
 
+      {/* Import Collection Dialog */}
+      <Dialog open={showImportCollectionModal} onOpenChange={setShowImportCollectionModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Import Collection</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                Import Collection
+              </label>
+              <p className="text-sm text-muted-foreground">
+                Upload a Postman or RESTerX collection JSON file to import all requests and folders.
+              </p>
+              <div className="mt-2">
+                <div className="flex items-center justify-center w-full">
+                  <label htmlFor="dropzone-file" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-muted/50 border-border hover:bg-muted">
+                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                      <FileJson className="w-10 h-10 mb-3 text-muted-foreground" />
+                      <p className="mb-2 text-sm text-center text-muted-foreground">
+                        <span className="font-semibold">Click to upload</span> or drag and drop
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Postman or RESTerX Collection JSON files
+                      </p>
+                    </div>
+                    <input 
+                      id="dropzone-file" 
+                      type="file" 
+                      accept=".json,application/json" 
+                      className="hidden" 
+                      onChange={handleImportCollection}
+                    />
+                  </label>
+                </div>
+              </div>
+              {importError && (
+                <div className="mt-2 text-sm text-red-500">
+                  {importError}
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setShowImportCollectionModal(false)}>
+              Cancel
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+      
       {/* Loading Overlay */}
       {loading && (
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50">
