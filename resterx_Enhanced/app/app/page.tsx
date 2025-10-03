@@ -150,11 +150,16 @@ export default function RESTerXApp() {
   const [jsonExpanded, setJsonExpanded] = useState(true)
   const [historyFilter, setHistoryFilter] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
+  const [showCollectionModal, setShowCollectionModal] = useState(false)
+  const [newCollectionName, setNewCollectionName] = useState("")
+  const [newCollectionDescription, setNewCollectionDescription] = useState("")
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", theme === "dark")
+  }, [theme])
 
-    // Load from localStorage
+  useEffect(() => {
+    // Load from localStorage on mount
     const savedHistory = localStorage.getItem("resterx-history")
     if (savedHistory) {
       setHistory(JSON.parse(savedHistory))
@@ -164,7 +169,7 @@ export default function RESTerXApp() {
     if (savedCollections) {
       setCollections(JSON.parse(savedCollections))
     }
-  }, [theme])
+  }, [])
 
   useEffect(() => {
     // Save history to localStorage
@@ -237,6 +242,26 @@ export default function RESTerXApp() {
       setBody(template.body)
       setBodyType(template.body ? "json" : "none")
     }
+  }
+
+  const createCollection = () => {
+    if (!newCollectionName.trim()) {
+      alert("Please enter a collection name")
+      return
+    }
+
+    const newCollection: Collection = {
+      id: Date.now(),
+      name: newCollectionName.trim(),
+      description: newCollectionDescription.trim(),
+      requests: [],
+    }
+
+    setCollections([...collections, newCollection])
+    setShowCollectionModal(false)
+    setNewCollectionName("")
+    setNewCollectionDescription("")
+    setSidebarTab("collections")
   }
 
   const sendRequest = async () => {
@@ -1096,11 +1121,36 @@ func main() {
 
                 <TabsContent value="collections" className="mt-4">
                   <div className="space-y-2">
-                    <Button variant="outline" size="sm" className="w-full gap-2 bg-transparent">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full gap-2 bg-transparent"
+                      onClick={() => setShowCollectionModal(true)}
+                    >
                       <Plus className="w-3 h-3" />
                       New Collection
                     </Button>
-                    <p className="text-sm text-muted-foreground text-center py-8">No saved collections</p>
+                    {collections.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-8">No saved collections</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {collections.map((collection) => (
+                          <div
+                            key={collection.id}
+                            className="p-3 rounded-lg border border-border hover:bg-accent/50 cursor-pointer transition-colors"
+                          >
+                            <h4 className="font-medium text-sm mb-1">{collection.name}</h4>
+                            {collection.description && (
+                              <p className="text-xs text-muted-foreground mb-2">{collection.description}</p>
+                            )}
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <Folder className="w-3 h-3" />
+                              <span>{collection.requests?.length || 0} requests</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </TabsContent>
               </Tabs>
@@ -1108,6 +1158,48 @@ func main() {
           </div>
         </div>
       </div>
+
+      {/* Collection Creation Dialog */}
+      <Dialog open={showCollectionModal} onOpenChange={setShowCollectionModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create New Collection</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label htmlFor="collection-name" className="text-sm font-medium">
+                Collection Name <span className="text-red-500">*</span>
+              </label>
+              <Input
+                id="collection-name"
+                placeholder="e.g., My API Collection"
+                value={newCollectionName}
+                onChange={(e) => setNewCollectionName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="collection-description" className="text-sm font-medium">
+                Description
+              </label>
+              <Textarea
+                id="collection-description"
+                placeholder="Optional description for this collection"
+                value={newCollectionDescription}
+                onChange={(e) => setNewCollectionDescription(e.target.value)}
+                rows={3}
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setShowCollectionModal(false)}>
+              Cancel
+            </Button>
+            <Button onClick={createCollection}>
+              Create Collection
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Loading Overlay */}
       {loading && (
