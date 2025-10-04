@@ -1205,6 +1205,85 @@ func main() {
     fmt.Println(string(body))
 }`
 
+      case "php":
+        return `<?php
+$url = "${url}";
+$headers = ${JSON.stringify(Object.entries(headersObj).map(([k, v]) => `${k}: ${v}`), null, 2).replace(/"/g, "'")};
+
+$options = [
+    'http' => [
+        'method' => '${method}',
+        'header' => implode("\\r\\n", $headers),
+        ${body && ["POST", "PUT", "PATCH"].includes(method) ? `'content' => '${body.replace(/'/g, "\\'")}',` : ""}
+    ]
+];
+
+$context = stream_context_create($options);
+$response = file_get_contents($url, false, $context);
+echo $response;
+?>`
+
+      case "ruby":
+        return `require 'net/http'
+require 'json'
+
+uri = URI('${url}')
+http = Net::HTTP.new(uri.host, uri.port)
+http.use_ssl = true if uri.scheme == 'https'
+
+request = Net::HTTP::${method.charAt(0) + method.slice(1).toLowerCase()}.new(uri)
+${Object.entries(headersObj)
+  .map(([key, value]) => `request['${key}'] = '${value}'`)
+  .join("\n")}
+${body && ["POST", "PUT", "PATCH"].includes(method) ? `request.body = '${body.replace(/'/g, "\\'")}'` : ""}
+
+response = http.request(request)
+puts response.body`
+
+      case "rust":
+        return `use reqwest;
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let client = reqwest::Client::new();
+    let response = client
+        .${method.toLowerCase()}("${url}")
+        ${Object.entries(headersObj)
+          .map(([key, value]) => `.header("${key}", "${value}")`)
+          .join("\n        ")}
+        ${body && ["POST", "PUT", "PATCH"].includes(method) ? `.body(r#"${body}"#)` : ""}
+        .send()
+        .await?
+        .text()
+        .await?;
+    
+    println!("{}", response);
+    Ok(())
+}`
+
+      case "swift":
+        return `import Foundation
+
+let url = URL(string: "${url}")!
+var request = URLRequest(url: url)
+request.httpMethod = "${method}"
+
+${Object.entries(headersObj)
+  .map(([key, value]) => `request.setValue("${value}", forHTTPHeaderField: "${key}")`)
+  .join("\n")}
+
+${body && ["POST", "PUT", "PATCH"].includes(method) ? `let body = """
+${body}
+"""
+request.httpBody = body.data(using: .utf8)` : ""}
+
+let task = URLSession.shared.dataTask(with: request) { data, response, error in
+    if let data = data, let response = String(data: data, encoding: .utf8) {
+        print(response)
+    }
+}
+task.resume()`
+
       default:
         return "// Select a language to generate code"
     }
@@ -1686,6 +1765,10 @@ func main() {
                         <SelectItem value="python">Python (Requests)</SelectItem>
                         <SelectItem value="nodejs">Node.js (HTTPS)</SelectItem>
                         <SelectItem value="go">Go</SelectItem>
+                        <SelectItem value="php">PHP</SelectItem>
+                        <SelectItem value="ruby">Ruby</SelectItem>
+                        <SelectItem value="rust">Rust (Reqwest)</SelectItem>
+                        <SelectItem value="swift">Swift</SelectItem>
                       </SelectContent>
                     </Select>
                     <div className="relative">
@@ -2350,6 +2433,10 @@ func main() {
                             <SelectItem value="python">Python</SelectItem>
                             <SelectItem value="nodejs">Node.js</SelectItem>
                             <SelectItem value="go">Go</SelectItem>
+                            <SelectItem value="php">PHP</SelectItem>
+                            <SelectItem value="ruby">Ruby</SelectItem>
+                            <SelectItem value="rust">Rust</SelectItem>
+                            <SelectItem value="swift">Swift</SelectItem>
                           </SelectContent>
                         </Select>
                         <div className="bg-muted/50 rounded-lg p-4 border border-border max-h-[500px] overflow-auto">

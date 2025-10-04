@@ -101,7 +101,7 @@ export default function LandingPage() {
               <div className="text-gray-400 text-sm">API templates included</div>
             </div>
             <div className="py-12 px-6 text-center">
-              <div className="text-4xl md:text-5xl font-bold mb-2 text-white">5</div>
+              <div className="text-4xl md:text-5xl font-bold mb-2 text-white">9+</div>
               <div className="text-gray-400 text-sm">languages for code export</div>
             </div>
           </div>
@@ -135,7 +135,7 @@ export default function LandingPage() {
               </div>
               <h3 className="text-xl font-semibold mb-3 text-white">Code Generation</h3>
               <p className="text-gray-400 leading-relaxed">
-                Export requests to cURL, JavaScript, Python, Go, and more with one click.
+                Export requests to cURL, JavaScript, Python, Go, PHP, Ruby, Rust, Swift, and more with one click.
               </p>
             </Card>
 
@@ -186,6 +186,16 @@ export default function LandingPage() {
               <h3 className="text-xl font-semibold mb-3 text-white">Collections</h3>
               <p className="text-gray-400 leading-relaxed">
                 Organize requests into collections for better project management.
+              </p>
+            </Card>
+
+            <Card className="bg-white/5 border-white/10 p-8 hover:bg-white/10 transition-colors">
+              <div className="w-12 h-12 rounded-lg bg-yellow-500/10 flex items-center justify-center mb-6">
+                <Terminal className="w-6 h-6 text-yellow-400" />
+              </div>
+              <h3 className="text-xl font-semibold mb-3 text-white">Environment Variables</h3>
+              <p className="text-gray-400 leading-relaxed">
+                Use environment variables with {"{{variable}}"} syntax across different environments.
               </p>
             </Card>
           </div>

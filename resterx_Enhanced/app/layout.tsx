@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     siteName: 'RESTerX',
     images: [
       {
-        url: '/og-image.png',
+        url: '/opengraph-image',
         width: 1200,
         height: 630,
         alt: 'RESTerX - API Testing Platform',
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: "RESTerX - The Complete Platform to Test APIs",
     description: "Professional API testing and development tool. Build, test, and debug APIs with the most powerful developer experience.",
-    images: ['/og-image.png'],
+    images: ['/opengraph-image'],
     creator: '@resterx',
   },
   robots: {
