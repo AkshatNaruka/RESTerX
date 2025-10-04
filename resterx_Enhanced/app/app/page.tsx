@@ -40,6 +40,27 @@ interface HeaderItem {
   value: string
 }
 
+interface QueryParamItem {
+  key: string
+  value: string
+  enabled: boolean
+}
+
+interface PathVariableItem {
+  key: string
+  value: string
+}
+
+interface CookieItem {
+  name: string
+  value: string
+  domain?: string
+  path?: string
+  expires?: string
+  httpOnly?: boolean
+  secure?: boolean
+}
+
 interface HistoryItem {
   id: number
   method: string
@@ -55,6 +76,7 @@ interface ResponseData {
   headers: Record<string, string>
   body: string
   responseTime: number
+  responseSize?: number
   timestamp?: string
   error?: boolean
 }
@@ -182,9 +204,12 @@ export default function RESTerXApp() {
   const [method, setMethod] = useState("GET")
   const [url, setUrl] = useState("")
   const [headers, setHeaders] = useState<HeaderItem[]>([{ key: "", value: "" }])
+  const [queryParams, setQueryParams] = useState<QueryParamItem[]>([{ key: "", value: "", enabled: true }])
+  const [pathVariables, setPathVariables] = useState<PathVariableItem[]>([])
+  const [cookies, setCookies] = useState<CookieItem[]>([])
   const [body, setBody] = useState("")
   const [bodyType, setBodyType] = useState<"none" | "json" | "text" | "form">("none")
-  const [authType, setAuthType] = useState<"none" | "bearer" | "basic">("none")
+  const [authType, setAuthType] = useState<"none" | "bearer" | "basic" | "oauth2">("none")
   const [bearerToken, setBearerToken] = useState("")
   const [basicUsername, setBasicUsername] = useState("")
   const [basicPassword, setBasicPassword] = useState("")
@@ -192,7 +217,7 @@ export default function RESTerXApp() {
   const [loading, setLoading] = useState(false)
   const [history, setHistory] = useState<HistoryItem[]>([])
   const [collections, setCollections] = useState<Collection[]>([])
-  const [activeTab, setActiveTab] = useState("headers")
+  const [activeTab, setActiveTab] = useState("params")
   const [responseTab, setResponseTab] = useState("body")
   const [sidebarTab, setSidebarTab] = useState("history")
   const [showTemplates, setShowTemplates] = useState(false)
@@ -241,6 +266,11 @@ export default function RESTerXApp() {
     localStorage.setItem("resterx-collections", JSON.stringify(collections))
   }, [collections])
 
+  useEffect(() => {
+    // Extract path variables from URL
+    extractPathVariables(url)
+  }, [url])
+
   // Keyboard shortcuts will be moved after the sendRequest function to fix dependency issues
 
   const toggleTheme = () => {
@@ -259,6 +289,94 @@ export default function RESTerXApp() {
     const newHeaders = [...headers]
     newHeaders[index][field] = value
     setHeaders(newHeaders)
+  }
+
+  const addQueryParam = () => {
+    setQueryParams([...queryParams, { key: "", value: "", enabled: true }])
+  }
+
+  const removeQueryParam = (index: number) => {
+    setQueryParams(queryParams.filter((_, i) => i !== index))
+  }
+
+  const updateQueryParam = (index: number, field: "key" | "value", value: string) => {
+    const newParams = [...queryParams]
+    newParams[index][field] = value
+    setQueryParams(newParams)
+  }
+
+  const toggleQueryParam = (index: number) => {
+    const newParams = [...queryParams]
+    newParams[index].enabled = !newParams[index].enabled
+    setQueryParams(newParams)
+  }
+
+  const buildUrlWithParams = () => {
+    try {
+      let finalUrl = url
+      
+      // Replace path variables {{variable}}
+      pathVariables.forEach(pv => {
+        if (pv.key && pv.value) {
+          finalUrl = finalUrl.replace(new RegExp(`{{${pv.key}}}`, 'g'), pv.value)
+        }
+      })
+
+      // Add query parameters
+      const enabledParams = queryParams.filter(p => p.enabled && p.key && p.value)
+      if (enabledParams.length > 0) {
+        const urlObj = new URL(finalUrl)
+        enabledParams.forEach(p => {
+          urlObj.searchParams.append(p.key, p.value)
+        })
+        finalUrl = urlObj.toString()
+      }
+      
+      return finalUrl
+    } catch {
+      return url
+    }
+  }
+
+  const extractPathVariables = (url: string) => {
+    const regex = /{{(\w+)}}/g
+    const matches = url.matchAll(regex)
+    const variables: PathVariableItem[] = []
+    for (const match of matches) {
+      if (!variables.find(v => v.key === match[1])) {
+        const existing = pathVariables.find(v => v.key === match[1])
+        variables.push({ key: match[1], value: existing?.value || "" })
+      }
+    }
+    setPathVariables(variables)
+  }
+
+  const parseCookiesFromResponse = (headers: Record<string, string>) => {
+    const setCookieHeader = headers['set-cookie'] || headers['Set-Cookie']
+    if (!setCookieHeader) return
+
+    const cookieStrings = Array.isArray(setCookieHeader) ? setCookieHeader : [setCookieHeader]
+    const parsedCookies: CookieItem[] = cookieStrings.map(cookieStr => {
+      const parts = cookieStr.split(';').map(p => p.trim())
+      const [nameValue] = parts
+      const [name, value] = nameValue.split('=')
+      
+      const cookie: CookieItem = { name, value }
+      
+      parts.slice(1).forEach(part => {
+        const [key, val] = part.split('=')
+        const lowerKey = key.toLowerCase()
+        if (lowerKey === 'domain') cookie.domain = val
+        if (lowerKey === 'path') cookie.path = val
+        if (lowerKey === 'expires') cookie.expires = val
+        if (lowerKey === 'httponly') cookie.httpOnly = true
+        if (lowerKey === 'secure') cookie.secure = true
+      })
+      
+      return cookie
+    })
+    
+    setCookies(prev => [...parsedCookies, ...prev])
   }
 
   const loadTemplate = (templateId: string) => {
@@ -582,6 +700,8 @@ export default function RESTerXApp() {
       // Add auth headers
       if (authType === "bearer" && bearerToken) {
         requestHeaders["Authorization"] = `Bearer ${bearerToken}`
+      } else if (authType === "oauth2" && bearerToken) {
+        requestHeaders["Authorization"] = `Bearer ${bearerToken}`
       } else if (authType === "basic" && basicUsername && basicPassword) {
         const credentials = btoa(`${basicUsername}:${basicPassword}`)
         requestHeaders["Authorization"] = `Basic ${credentials}`
@@ -601,26 +721,36 @@ export default function RESTerXApp() {
         options.body = body
       }
 
-      const res = await fetch(url, options)
+      // Build final URL with query params and path variables
+      const finalUrl = buildUrlWithParams()
+
+      const res = await fetch(finalUrl, options)
       const responseTime = Date.now() - startTime
       const responseBody = await res.text()
+      const responseSize = new Blob([responseBody]).size
 
+      const responseHeaders = Object.fromEntries(res.headers.entries())
+      
       const responseData: ResponseData = {
         statusCode: res.status,
         statusText: res.statusText,
-        headers: Object.fromEntries(res.headers.entries()),
+        headers: responseHeaders,
         body: responseBody,
         responseTime,
+        responseSize,
         timestamp: new Date().toISOString(),
       }
 
       setResponse(responseData)
+      
+      // Parse cookies from response
+      parseCookiesFromResponse(responseHeaders)
 
       // Add to history
       const historyItem: HistoryItem = {
         id: Date.now(),
         method,
-        url,
+        url: finalUrl,
         statusCode: res.status,
         responseTime,
         timestamp: new Date().toISOString(),
@@ -1076,7 +1206,9 @@ func main() {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-muted-foreground">Size:</span>
-                  <span className="font-mono font-semibold">{formatBytes(response.body.length)}</span>
+                  <span className="font-mono font-semibold">
+                    {formatBytes(response.responseSize || response.body.length)}
+                  </span>
                 </div>
               </div>
             )}
@@ -1166,11 +1298,74 @@ func main() {
                 {/* Request Tabs */}
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
                   <TabsList className="w-full justify-start">
+                    <TabsTrigger value="params">Params</TabsTrigger>
                     <TabsTrigger value="headers">Headers</TabsTrigger>
                     <TabsTrigger value="body">Body</TabsTrigger>
                     <TabsTrigger value="auth">Auth</TabsTrigger>
                     <TabsTrigger value="variables">Variables</TabsTrigger>
                   </TabsList>
+
+                  <TabsContent value="params" className="space-y-4 mt-4">
+                    <div className="space-y-3">
+                      <h3 className="text-sm font-medium">Query Parameters</h3>
+                      {queryParams.map((param, index) => (
+                        <div key={index} className="flex gap-2 items-center">
+                          <input
+                            type="checkbox"
+                            checked={param.enabled}
+                            onChange={() => toggleQueryParam(index)}
+                            className="w-4 h-4"
+                          />
+                          <Input
+                            placeholder="Key"
+                            value={param.key}
+                            onChange={(e) => updateQueryParam(index, "key", e.target.value)}
+                            className="flex-1 font-mono text-sm"
+                          />
+                          <Input
+                            placeholder="Value"
+                            value={param.value}
+                            onChange={(e) => updateQueryParam(index, "value", e.target.value)}
+                            className="flex-1 font-mono text-sm"
+                          />
+                          <Button variant="ghost" size="icon" onClick={() => removeQueryParam(index)}>
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ))}
+                      <Button variant="outline" size="sm" onClick={addQueryParam} className="gap-2 bg-transparent">
+                        <Plus className="w-4 h-4" />
+                        Add Query Parameter
+                      </Button>
+                    </div>
+
+                    {pathVariables.length > 0 && (
+                      <div className="space-y-3 pt-4 border-t">
+                        <h3 className="text-sm font-medium">Path Variables</h3>
+                        <p className="text-xs text-muted-foreground">Variables detected in URL (use {`{{variable}}`} syntax)</p>
+                        {pathVariables.map((pv, index) => (
+                          <div key={index} className="flex gap-2">
+                            <Input
+                              placeholder="Variable name"
+                              value={pv.key}
+                              disabled
+                              className="flex-1 font-mono text-sm bg-muted"
+                            />
+                            <Input
+                              placeholder="Value"
+                              value={pv.value}
+                              onChange={(e) => {
+                                const newVars = [...pathVariables]
+                                newVars[index].value = e.target.value
+                                setPathVariables(newVars)
+                              }}
+                              className="flex-1 font-mono text-sm"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </TabsContent>
 
                   <TabsContent value="headers" className="space-y-3 mt-4">
                     {headers.map((header, index) => (
@@ -1247,7 +1442,7 @@ func main() {
                   </TabsContent>
 
                   <TabsContent value="auth" className="space-y-3 mt-4">
-                    <div className="flex gap-2 mb-3">
+                    <div className="flex gap-2 mb-3 flex-wrap">
                       <Button
                         variant={authType === "none" ? "default" : "outline"}
                         size="sm"
@@ -1268,6 +1463,13 @@ func main() {
                         onClick={() => setAuthType("basic")}
                       >
                         Basic Auth
+                      </Button>
+                      <Button
+                        variant={authType === "oauth2" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setAuthType("oauth2")}
+                      >
+                        OAuth 2.0
                       </Button>
                     </div>
 
@@ -1295,6 +1497,23 @@ func main() {
                           onChange={(e) => setBasicPassword(e.target.value)}
                           className="font-mono text-sm"
                         />
+                      </div>
+                    )}
+
+                    {authType === "oauth2" && (
+                      <div className="space-y-3 p-4 border rounded-lg">
+                        <p className="text-sm text-muted-foreground">
+                          OAuth 2.0 authentication configuration. Get your access token from your OAuth provider.
+                        </p>
+                        <Input
+                          placeholder="Access Token"
+                          value={bearerToken}
+                          onChange={(e) => setBearerToken(e.target.value)}
+                          className="font-mono text-sm"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          The access token will be added to the Authorization header as "Bearer &lt;token&gt;"
+                        </p>
                       </div>
                     )}
                   </TabsContent>
@@ -1357,10 +1576,17 @@ func main() {
                     <TabsList>
                       <TabsTrigger value="body">Body</TabsTrigger>
                       <TabsTrigger value="headers">Headers</TabsTrigger>
+                      <TabsTrigger value="cookies">Cookies</TabsTrigger>
                       <TabsTrigger value="code">Code</TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="body" className="mt-4">
+                      <div className="flex items-center justify-between mb-2 text-sm text-muted-foreground">
+                        <span>
+                          {response.responseSize ? `Size: ${formatBytes(response.responseSize)}` : ''}
+                        </span>
+                        <span>Time: {response.responseTime}ms</span>
+                      </div>
                       <div className="bg-muted/50 rounded-lg p-4 border border-border max-h-[500px] overflow-auto">
                         <pre className="text-sm font-mono whitespace-pre-wrap break-words">{response.body}</pre>
                       </div>
@@ -1370,6 +1596,47 @@ func main() {
                       <div className="bg-muted/50 rounded-lg p-4 border border-border max-h-[500px] overflow-auto">
                         <pre className="text-sm font-mono">{JSON.stringify(response.headers, null, 2)}</pre>
                       </div>
+                    </TabsContent>
+
+                    <TabsContent value="cookies" className="mt-4">
+                      {cookies.length > 0 ? (
+                        <div className="space-y-2">
+                          {cookies.map((cookie, index) => (
+                            <div key={index} className="bg-muted/50 rounded-lg p-3 border border-border">
+                              <div className="flex items-start justify-between mb-2">
+                                <span className="font-semibold text-sm">{cookie.name}</span>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setCookies(cookies.filter((_, i) => i !== index))}
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </Button>
+                              </div>
+                              <div className="space-y-1 text-xs font-mono">
+                                <div><span className="text-muted-foreground">Value:</span> {cookie.value}</div>
+                                {cookie.domain && <div><span className="text-muted-foreground">Domain:</span> {cookie.domain}</div>}
+                                {cookie.path && <div><span className="text-muted-foreground">Path:</span> {cookie.path}</div>}
+                                {cookie.expires && <div><span className="text-muted-foreground">Expires:</span> {cookie.expires}</div>}
+                                {cookie.httpOnly && <div className="text-blue-500">HttpOnly</div>}
+                                {cookie.secure && <div className="text-green-500">Secure</div>}
+                              </div>
+                            </div>
+                          ))}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCookies([])}
+                            className="w-full"
+                          >
+                            Clear All Cookies
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="bg-muted/50 rounded-lg p-4 border border-border text-center text-muted-foreground">
+                          No cookies received yet
+                        </div>
+                      )}
                     </TabsContent>
 
                     <TabsContent value="code" className="mt-4">
