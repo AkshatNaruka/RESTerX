@@ -131,14 +131,6 @@ For command-line usage:
 
 This will start an interactive menu where you can select the HTTP method you want to use. After selecting a method, you will be prompted to enter the URL for the request.
 
-## 🖼️ Screenshots
-
-### Light Theme
-![RESTerX Web Interface](https://github.com/user-attachments/assets/fd036ccc-1934-425d-b301-867ff2619013)
-
-### Dark Theme
-![RESTerX Dark Theme](https://github.com/user-attachments/assets/b192e59e-aa37-4407-a26d-419b17fbeff1)
-
 ## 🎯 Key Benefits
 
 - **Two Powerful Versions**: Choose between Go-based or modern React implementation
