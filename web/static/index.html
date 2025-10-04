@@ -143,6 +143,15 @@
                     <span class="action-icon">🔗</span>
                     <span class="action-text">Share</span>
                 </button>
+                <div class="action-divider"></div>
+                <button id="quickBulkTest" class="quick-action-btn" title="Bulk Test Request">
+                    <span class="action-icon">🎯</span>
+                    <span class="action-text">Bulk Test</span>
+                </button>
+                <button id="quickCompare" class="quick-action-btn" title="Compare Responses">
+                    <span class="action-icon">⚖️</span>
+                    <span class="action-text">Compare</span>
+                </button>
                 <div class="quick-actions-right">
                     <div class="request-status" id="requestStatus">
                         <span class="status-dot"></span>
@@ -171,12 +180,32 @@
                         <div class="quick-templates">
                             <select id="templateSelect" class="template-select">
                                 <option value="">Select a template...</option>
-                                <option value="jsonplaceholder-posts">JSONPlaceholder - Posts</option>
-                                <option value="jsonplaceholder-users">JSONPlaceholder - Users</option>
-                                <option value="httpbin-get">HTTPBin - GET Test</option>
-                                <option value="httpbin-post">HTTPBin - POST Test</option>
-                                <option value="github-api">GitHub API - User Info</option>
-                                <option value="rest-countries">REST Countries API</option>
+                                <optgroup label="🔥 Popular">
+                                    <option value="jsonplaceholder-posts">JSONPlaceholder - Posts</option>
+                                    <option value="jsonplaceholder-users">JSONPlaceholder - Users</option>
+                                    <option value="github-api">GitHub API - User Info</option>
+                                    <option value="cat-facts">Cat Facts API</option>
+                                    <option value="dog-facts">Dog Facts API</option>
+                                </optgroup>
+                                <optgroup label="🧪 Testing">
+                                    <option value="httpbin-get">HTTPBin - GET Test</option>
+                                    <option value="httpbin-post">HTTPBin - POST Test</option>
+                                    <option value="webhook-receiver">Webhook Receiver</option>
+                                </optgroup>
+                                <optgroup label="🔐 Authentication">
+                                    <option value="bearer-auth">Bearer Token Auth</option>
+                                </optgroup>
+                                <optgroup label="🌐 Public APIs">
+                                    <option value="rest-countries">REST Countries</option>
+                                    <option value="weather-api">Weather API</option>
+                                    <option value="crypto-prices">Cryptocurrency Prices</option>
+                                    <option value="random-user">Random User Generator</option>
+                                    <option value="ip-geolocation">IP Geolocation</option>
+                                    <option value="quote-api">Random Quotes</option>
+                                    <option value="spacex-api">SpaceX Launches</option>
+                                    <option value="pokemon-api">Pokémon API</option>
+                                    <option value="chuck-norris">Chuck Norris Jokes</option>
+                                </optgroup>
                             </select>
                         </div>
 
@@ -278,6 +307,157 @@
                                         <div class="template-tags">
                                             <span class="tag">Webhooks</span>
                                             <span class="tag">Testing</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- New API Templates -->
+                                <div class="template-card" data-category="popular" data-template="cat-facts">
+                                    <div class="template-preview">
+                                        <div class="method-badge get">GET</div>
+                                        <div class="endpoint-preview">/fact</div>
+                                    </div>
+                                    <div class="template-info">
+                                        <h4>Cat Facts API</h4>
+                                        <p>Get random cat facts</p>
+                                        <div class="template-tags">
+                                            <span class="tag">Fun</span>
+                                            <span class="tag">Public API</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="template-card" data-category="popular" data-template="dog-facts">
+                                    <div class="template-preview">
+                                        <div class="method-badge get">GET</div>
+                                        <div class="endpoint-preview">/api/facts</div>
+                                    </div>
+                                    <div class="template-info">
+                                        <h4>Dog Facts API</h4>
+                                        <p>Get random dog facts</p>
+                                        <div class="template-tags">
+                                            <span class="tag">Fun</span>
+                                            <span class="tag">Public API</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="template-card" data-category="rest" data-template="weather-api">
+                                    <div class="template-preview">
+                                        <div class="method-badge get">GET</div>
+                                        <div class="endpoint-preview">/weather</div>
+                                    </div>
+                                    <div class="template-info">
+                                        <h4>Weather API</h4>
+                                        <p>Get weather data (requires API key)</p>
+                                        <div class="template-tags">
+                                            <span class="tag">Weather</span>
+                                            <span class="tag">API Key</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="template-card" data-category="rest" data-template="crypto-prices">
+                                    <div class="template-preview">
+                                        <div class="method-badge get">GET</div>
+                                        <div class="endpoint-preview">/price</div>
+                                    </div>
+                                    <div class="template-info">
+                                        <h4>Crypto Prices</h4>
+                                        <p>Get cryptocurrency prices</p>
+                                        <div class="template-tags">
+                                            <span class="tag">Finance</span>
+                                            <span class="tag">Crypto</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="template-card" data-category="rest" data-template="random-user">
+                                    <div class="template-preview">
+                                        <div class="method-badge get">GET</div>
+                                        <div class="endpoint-preview">/api</div>
+                                    </div>
+                                    <div class="template-info">
+                                        <h4>Random User</h4>
+                                        <p>Generate random user data</p>
+                                        <div class="template-tags">
+                                            <span class="tag">Testing</span>
+                                            <span class="tag">Data</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="template-card" data-category="rest" data-template="ip-geolocation">
+                                    <div class="template-preview">
+                                        <div class="method-badge get">GET</div>
+                                        <div class="endpoint-preview">/json</div>
+                                    </div>
+                                    <div class="template-info">
+                                        <h4>IP Geolocation</h4>
+                                        <p>Get your IP geolocation</p>
+                                        <div class="template-tags">
+                                            <span class="tag">Location</span>
+                                            <span class="tag">IP</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="template-card" data-category="rest" data-template="quote-api">
+                                    <div class="template-preview">
+                                        <div class="method-badge get">GET</div>
+                                        <div class="endpoint-preview">/random</div>
+                                    </div>
+                                    <div class="template-info">
+                                        <h4>Random Quotes</h4>
+                                        <p>Get inspirational quotes</p>
+                                        <div class="template-tags">
+                                            <span class="tag">Quotes</span>
+                                            <span class="tag">Motivation</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="template-card" data-category="rest" data-template="spacex-api">
+                                    <div class="template-preview">
+                                        <div class="method-badge get">GET</div>
+                                        <div class="endpoint-preview">/launches/latest</div>
+                                    </div>
+                                    <div class="template-info">
+                                        <h4>SpaceX Launches</h4>
+                                        <p>Latest SpaceX launch info</p>
+                                        <div class="template-tags">
+                                            <span class="tag">Space</span>
+                                            <span class="tag">SpaceX</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="template-card" data-category="rest" data-template="pokemon-api">
+                                    <div class="template-preview">
+                                        <div class="method-badge get">GET</div>
+                                        <div class="endpoint-preview">/pokemon</div>
+                                    </div>
+                                    <div class="template-info">
+                                        <h4>Pokémon API</h4>
+                                        <p>Get Pokémon information</p>
+                                        <div class="template-tags">
+                                            <span class="tag">Gaming</span>
+                                            <span class="tag">Pokémon</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="template-card" data-category="rest" data-template="chuck-norris">
+                                    <div class="template-preview">
+                                        <div class="method-badge get">GET</div>
+                                        <div class="endpoint-preview">/jokes/random</div>
+                                    </div>
+                                    <div class="template-info">
+                                        <h4>Chuck Norris Jokes</h4>
+                                        <p>Get random Chuck Norris jokes</p>
+                                        <div class="template-tags">
+                                            <span class="tag">Fun</span>
+                                            <span class="tag">Jokes</span>
                                         </div>
                                     </div>
                                 </div>
@@ -755,6 +935,20 @@
                     </div>
                 </div>
                 
+                <div class="settings-section">
+                    <h4>Retry Configuration</h4>
+                    <div class="form-group">
+                        <label for="retryCount">Number of Retries:</label>
+                        <input type="number" id="retryCount" min="0" max="5" value="0" class="settings-input">
+                        <small>Automatically retry failed requests (0-5 times)</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="retryDelay">Retry Delay (seconds):</label>
+                        <input type="number" id="retryDelay" min="1" max="30" value="2" class="settings-input">
+                        <small>Wait time between retries (1-30 seconds)</small>
+                    </div>
+                </div>
+                
                 <div class="settings-actions">
                     <button id="saveSettings" class="save-btn">Save Settings</button>
                     <button id="resetSettings" class="reset-btn">Reset to Defaults</button>
@@ -936,6 +1130,91 @@
                             <kbd>?</kbd>
                             <span>Show Shortcuts</span>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Test Modal -->
+    <div id="bulkTestModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🎯 Bulk Test Request</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="settings-section">
+                    <h4>Test Configuration</h4>
+                    <div class="form-group">
+                        <label for="bulkTestCount">Number of Requests:</label>
+                        <input type="number" id="bulkTestCount" min="1" max="100" value="10" class="settings-input">
+                        <small>Send the same request multiple times (1-100)</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="bulkTestDelay">Delay Between Requests (ms):</label>
+                        <input type="number" id="bulkTestDelay" min="0" max="5000" value="100" class="settings-input">
+                        <small>Wait time between each request (0-5000 ms)</small>
+                    </div>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="bulkTestParallel">
+                            Send requests in parallel
+                        </label>
+                    </div>
+                </div>
+                <div class="settings-actions">
+                    <button id="startBulkTest" class="save-btn">Start Bulk Test</button>
+                    <button class="reset-btn modal-close">Cancel</button>
+                </div>
+                <div id="bulkTestResults" style="display: none; margin-top: 20px;">
+                    <h4>Test Results</h4>
+                    <div id="bulkTestProgress" class="progress-bar">
+                        <div class="progress-fill" style="width: 0%"></div>
+                    </div>
+                    <div id="bulkTestStats" class="stats-grid"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Response Comparison Modal -->
+    <div id="compareModal" class="modal" style="display: none;">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3>⚖️ Compare Responses</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="compare-controls">
+                    <div class="compare-select">
+                        <label>Response 1:</label>
+                        <select id="compareSelect1" class="settings-input">
+                            <option value="">Select from history...</option>
+                        </select>
+                    </div>
+                    <div class="compare-select">
+                        <label>Response 2:</label>
+                        <select id="compareSelect2" class="settings-input">
+                            <option value="">Select from history...</option>
+                        </select>
+                    </div>
+                    <button id="startCompare" class="save-btn">Compare</button>
+                </div>
+                <div id="compareResults" style="display: none; margin-top: 20px;">
+                    <div class="compare-grid">
+                        <div class="compare-column">
+                            <h4>Response 1</h4>
+                            <div id="compareResponse1" class="compare-response"></div>
+                        </div>
+                        <div class="compare-column">
+                            <h4>Response 2</h4>
+                            <div id="compareResponse2" class="compare-response"></div>
+                        </div>
+                    </div>
+                    <div id="compareDiff" class="compare-diff">
+                        <h4>Differences</h4>
+                        <ul id="diffList"></ul>
                     </div>
                 </div>
             </div>

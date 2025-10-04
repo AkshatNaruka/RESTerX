@@ -32,6 +32,8 @@ import {
   ArrowLeft,
   FileJson,
   Upload,
+  Target,
+  Scale,
 } from "lucide-react"
 import Link from "next/link"
 
@@ -183,6 +185,93 @@ const API_TEMPLATES = {
     headers: [],
     body: "",
   },
+  "bearer-auth": {
+    name: "Bearer Token Auth",
+    method: "POST",
+    url: "https://httpbin.org/bearer",
+    headers: [
+      { key: "Authorization", value: "Bearer YOUR_TOKEN_HERE" },
+      { key: "Content-Type", value: "application/json" }
+    ],
+    body: '{\n  "action": "test",\n  "data": "protected resource"\n}',
+  },
+  "webhook-receiver": {
+    name: "Webhook Receiver",
+    method: "POST",
+    url: "https://webhook.site/unique-url",
+    headers: [{ key: "Content-Type", value: "application/json" }],
+    body: '{\n  "event": "webhook.test",\n  "timestamp": "' + new Date().toISOString() + '",\n  "data": {\n    "message": "Test webhook payload"\n  }\n}',
+  },
+  "weather-api": {
+    name: "Weather API",
+    method: "GET",
+    url: "https://api.openweathermap.org/data/2.5/weather?q=London&appid=YOUR_API_KEY",
+    headers: [{ key: "Accept", value: "application/json" }],
+    body: "",
+  },
+  "cat-facts": {
+    name: "Cat Facts API",
+    method: "GET",
+    url: "https://catfact.ninja/fact",
+    headers: [{ key: "Accept", value: "application/json" }],
+    body: "",
+  },
+  "dog-facts": {
+    name: "Dog Facts API",
+    method: "GET",
+    url: "https://dog-api.kinduff.com/api/facts",
+    headers: [{ key: "Accept", value: "application/json" }],
+    body: "",
+  },
+  "crypto-prices": {
+    name: "Cryptocurrency Prices",
+    method: "GET",
+    url: "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd",
+    headers: [{ key: "Accept", value: "application/json" }],
+    body: "",
+  },
+  "random-user": {
+    name: "Random User Generator",
+    method: "GET",
+    url: "https://randomuser.me/api/",
+    headers: [{ key: "Accept", value: "application/json" }],
+    body: "",
+  },
+  "ip-geolocation": {
+    name: "IP Geolocation",
+    method: "GET",
+    url: "https://ipapi.co/json/",
+    headers: [{ key: "Accept", value: "application/json" }],
+    body: "",
+  },
+  "quote-api": {
+    name: "Random Quotes",
+    method: "GET",
+    url: "https://api.quotable.io/random",
+    headers: [{ key: "Accept", value: "application/json" }],
+    body: "",
+  },
+  "spacex-api": {
+    name: "SpaceX Launches",
+    method: "GET",
+    url: "https://api.spacexdata.com/v4/launches/latest",
+    headers: [{ key: "Accept", value: "application/json" }],
+    body: "",
+  },
+  "pokemon-api": {
+    name: "Pokémon API",
+    method: "GET",
+    url: "https://pokeapi.co/api/v2/pokemon/pikachu",
+    headers: [{ key: "Accept", value: "application/json" }],
+    body: "",
+  },
+  "chuck-norris": {
+    name: "Chuck Norris Jokes",
+    method: "GET",
+    url: "https://api.chucknorris.io/jokes/random",
+    headers: [{ key: "Accept", value: "application/json" }],
+    body: "",
+  },
   "local-test-api": {
     name: "Local Test API - Users",
     method: "GET", 
@@ -238,6 +327,31 @@ export default function RESTerXApp() {
   const [selectedCollectionId, setSelectedCollectionId] = useState<number | null>(null)
   const [requestName, setRequestName] = useState("")
   const [expandedCollectionId, setExpandedCollectionId] = useState<number | null>(null)
+  
+  // Bulk test states
+  const [showBulkTest, setShowBulkTest] = useState(false)
+  const [bulkTestCount, setBulkTestCount] = useState(10)
+  const [bulkTestDelay, setBulkTestDelay] = useState(100)
+  const [bulkTestParallel, setBulkTestParallel] = useState(false)
+  const [bulkTestRunning, setBulkTestRunning] = useState(false)
+  const [bulkTestResults, setBulkTestResults] = useState<{
+    total: number
+    completed: number
+    successful: number
+    failed: number
+    avgTime: number
+    minTime: number
+    maxTime: number
+  } | null>(null)
+  
+  // Response comparison states
+  const [showCompare, setShowCompare] = useState(false)
+  const [compareIndex1, setCompareIndex1] = useState<number | null>(null)
+  const [compareIndex2, setCompareIndex2] = useState<number | null>(null)
+  
+  // Retry configuration states
+  const [retryCount, setRetryCount] = useState(0)
+  const [retryDelay, setRetryDelay] = useState(2)
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", theme === "dark")
@@ -1008,6 +1122,125 @@ func main() {
     return matchesSearch && matchesStatus
   })
 
+  // Bulk test function
+  const runBulkTest = async () => {
+    if (!url) return
+    
+    setBulkTestRunning(true)
+    setBulkTestResults({
+      total: bulkTestCount,
+      completed: 0,
+      successful: 0,
+      failed: 0,
+      avgTime: 0,
+      minTime: Infinity,
+      maxTime: 0
+    })
+
+    const results = {
+      total: bulkTestCount,
+      completed: 0,
+      successful: 0,
+      failed: 0,
+      times: [] as number[]
+    }
+
+    const makeRequest = async () => {
+      const startTime = performance.now()
+      try {
+        const response = await fetch(url, {
+          method,
+          headers: headers.reduce((acc, h) => {
+            if (h.key && h.value) acc[h.key] = h.value
+            return acc
+          }, {} as Record<string, string>),
+          body: body && ["POST", "PUT", "PATCH"].includes(method) ? body : undefined,
+        })
+        
+        const endTime = performance.now()
+        const time = endTime - startTime
+        
+        results.completed++
+        results.successful++
+        results.times.push(time)
+        
+        setBulkTestResults({
+          total: results.total,
+          completed: results.completed,
+          successful: results.successful,
+          failed: results.failed,
+          avgTime: results.times.reduce((a, b) => a + b, 0) / results.times.length,
+          minTime: Math.min(...results.times),
+          maxTime: Math.max(...results.times)
+        })
+      } catch (error) {
+        results.completed++
+        results.failed++
+        
+        setBulkTestResults({
+          total: results.total,
+          completed: results.completed,
+          successful: results.successful,
+          failed: results.failed,
+          avgTime: results.times.length > 0 ? results.times.reduce((a, b) => a + b, 0) / results.times.length : 0,
+          minTime: results.times.length > 0 ? Math.min(...results.times) : 0,
+          maxTime: results.times.length > 0 ? Math.max(...results.times) : 0
+        })
+      }
+    }
+
+    if (bulkTestParallel) {
+      // Parallel execution
+      const promises = Array(bulkTestCount).fill(null).map(() => makeRequest())
+      await Promise.all(promises)
+    } else {
+      // Sequential execution with delay
+      for (let i = 0; i < bulkTestCount; i++) {
+        await makeRequest()
+        if (i < bulkTestCount - 1 && bulkTestDelay > 0) {
+          await new Promise(resolve => setTimeout(resolve, bulkTestDelay))
+        }
+      }
+    }
+
+    setBulkTestRunning(false)
+  }
+
+  // Response comparison functions
+  const compareResponses = () => {
+    if (compareIndex1 === null || compareIndex2 === null) return null
+    
+    const response1 = history[compareIndex1]
+    const response2 = history[compareIndex2]
+    
+    if (!response1 || !response2) return null
+
+    const differences = []
+    
+    if (response1.statusCode !== response2.statusCode) {
+      differences.push(`Status code: ${response1.statusCode} vs ${response2.statusCode}`)
+    }
+    
+    const timeDiff = Math.abs(response1.responseTime - response2.responseTime)
+    if (timeDiff > 100) {
+      differences.push(`Response time difference: ${timeDiff.toFixed(0)}ms`)
+    }
+    
+    if (response1.method !== response2.method) {
+      differences.push(`Method: ${response1.method} vs ${response2.method}`)
+    }
+    
+    if (response1.url !== response2.url) {
+      differences.push(`URL: Different endpoints`)
+    }
+    
+    return {
+      response1,
+      response2,
+      differences
+    }
+  }
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -1115,6 +1348,31 @@ func main() {
                         Validate SSL certificates
                       </label>
                     </div>
+                    <div className="space-y-2 pt-2 border-t">
+                      <h4 className="text-sm font-semibold">Retry Configuration</h4>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Number of Retries:</label>
+                        <Input
+                          type="number"
+                          min={0}
+                          max={5}
+                          value={retryCount}
+                          onChange={(e) => setRetryCount(parseInt(e.target.value) || 0)}
+                        />
+                        <p className="text-xs text-muted-foreground">Automatically retry failed requests (0-5 times)</p>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Retry Delay (seconds):</label>
+                        <Input
+                          type="number"
+                          min={1}
+                          max={30}
+                          value={retryDelay}
+                          onChange={(e) => setRetryDelay(parseInt(e.target.value) || 2)}
+                        />
+                        <p className="text-xs text-muted-foreground">Wait time between retries (1-30 seconds)</p>
+                      </div>
+                    </div>
                   </div>
                 </DialogContent>
               </Dialog>
@@ -1190,6 +1448,187 @@ func main() {
               <Button variant="outline" size="icon" title="Share Request">
                 <Share2 className="w-4 h-4" />
               </Button>
+              
+              {/* Bulk Test Button */}
+              <Dialog open={showBulkTest} onOpenChange={setShowBulkTest}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="icon" title="Bulk Test">
+                    <Target className="w-4 h-4" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>🎯 Bulk Test Request</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Number of Requests:</label>
+                      <Input
+                        type="number"
+                        min={1}
+                        max={100}
+                        value={bulkTestCount}
+                        onChange={(e) => setBulkTestCount(parseInt(e.target.value) || 10)}
+                      />
+                      <p className="text-xs text-muted-foreground">Send the same request multiple times (1-100)</p>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Delay Between Requests (ms):</label>
+                      <Input
+                        type="number"
+                        min={0}
+                        max={5000}
+                        value={bulkTestDelay}
+                        onChange={(e) => setBulkTestDelay(parseInt(e.target.value) || 100)}
+                      />
+                      <p className="text-xs text-muted-foreground">Wait time between each request (0-5000 ms)</p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="bulkTestParallel"
+                        checked={bulkTestParallel}
+                        onChange={(e) => setBulkTestParallel(e.target.checked)}
+                        className="rounded"
+                      />
+                      <label htmlFor="bulkTestParallel" className="text-sm">
+                        Send requests in parallel
+                      </label>
+                    </div>
+                    
+                    {bulkTestResults && (
+                      <div className="space-y-3 pt-4 border-t">
+                        <h4 className="font-medium">Test Results</h4>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="bg-muted/50 p-3 rounded-lg">
+                            <p className="text-xs text-muted-foreground">Completed</p>
+                            <p className="text-lg font-semibold">{bulkTestResults.completed}/{bulkTestResults.total}</p>
+                          </div>
+                          <div className="bg-muted/50 p-3 rounded-lg">
+                            <p className="text-xs text-muted-foreground">Success Rate</p>
+                            <p className="text-lg font-semibold">
+                              {bulkTestResults.completed > 0 ? ((bulkTestResults.successful / bulkTestResults.completed) * 100).toFixed(1) : 0}%
+                            </p>
+                          </div>
+                          <div className="bg-muted/50 p-3 rounded-lg">
+                            <p className="text-xs text-muted-foreground">Avg Response Time</p>
+                            <p className="text-lg font-semibold">{bulkTestResults.avgTime.toFixed(0)}ms</p>
+                          </div>
+                          <div className="bg-muted/50 p-3 rounded-lg">
+                            <p className="text-xs text-muted-foreground">Min/Max Time</p>
+                            <p className="text-lg font-semibold">{bulkTestResults.minTime.toFixed(0)}/{bulkTestResults.maxTime.toFixed(0)}ms</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    <div className="flex gap-2 pt-4">
+                      <Button 
+                        onClick={runBulkTest} 
+                        disabled={bulkTestRunning || !url}
+                        className="flex-1"
+                      >
+                        {bulkTestRunning ? "Running..." : "Start Bulk Test"}
+                      </Button>
+                      <Button variant="outline" onClick={() => setShowBulkTest(false)}>
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+              
+              {/* Response Comparison Button */}
+              <Dialog open={showCompare} onOpenChange={setShowCompare}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="icon" title="Compare Responses">
+                    <Scale className="w-4 h-4" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-4xl">
+                  <DialogHeader>
+                    <DialogTitle>⚖️ Compare Responses</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Response 1:</label>
+                        <Select
+                          value={compareIndex1?.toString() || ""}
+                          onValueChange={(value) => setCompareIndex1(parseInt(value))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select from history..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {history.map((item, index) => (
+                              <SelectItem key={index} value={index.toString()}>
+                                {item.method} {item.url} - {new Date(item.timestamp).toLocaleString()}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Response 2:</label>
+                        <Select
+                          value={compareIndex2?.toString() || ""}
+                          onValueChange={(value) => setCompareIndex2(parseInt(value))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select from history..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {history.map((item, index) => (
+                              <SelectItem key={index} value={index.toString()}>
+                                {item.method} {item.url} - {new Date(item.timestamp).toLocaleString()}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    
+                    {compareIndex1 !== null && compareIndex2 !== null && compareResponses() && (
+                      <div className="space-y-4 pt-4 border-t">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <h4 className="font-medium">Response 1</h4>
+                            <div className="bg-muted/50 p-3 rounded-lg text-sm space-y-1">
+                              <p><strong>Status:</strong> {compareResponses()?.response1.statusCode}</p>
+                              <p><strong>Time:</strong> {new Date(compareResponses()?.response1.timestamp || "").toLocaleString()}</p>
+                              <p><strong>Response Time:</strong> {compareResponses()?.response1.responseTime}ms</p>
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <h4 className="font-medium">Response 2</h4>
+                            <div className="bg-muted/50 p-3 rounded-lg text-sm space-y-1">
+                              <p><strong>Status:</strong> {compareResponses()?.response2.statusCode}</p>
+                              <p><strong>Time:</strong> {new Date(compareResponses()?.response2.timestamp || "").toLocaleString()}</p>
+                              <p><strong>Response Time:</strong> {compareResponses()?.response2.responseTime}ms</p>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <h4 className="font-medium">Differences</h4>
+                          <div className="bg-muted/50 p-3 rounded-lg">
+                            {compareResponses()?.differences.length === 0 ? (
+                              <p className="text-sm text-green-600">✅ No significant differences found</p>
+                            ) : (
+                              <ul className="space-y-1">
+                                {compareResponses()?.differences.map((diff, index) => (
+                                  <li key={index} className="text-sm">⚠️ {diff}</li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
 
             {response && (
