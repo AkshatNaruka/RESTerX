@@ -1972,6 +1972,97 @@ class RESTerX {
                 headers: { 'Accept': 'application/json' },
                 body: '',
                 description: 'Get country information from REST Countries API'
+            },
+            'bearer-auth': {
+                method: 'POST',
+                url: 'https://httpbin.org/bearer',
+                headers: { 
+                    'Authorization': 'Bearer YOUR_TOKEN_HERE',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ action: 'test', data: 'protected resource' }, null, 2),
+                description: 'Example request with Bearer token authentication'
+            },
+            'webhook-receiver': {
+                method: 'POST',
+                url: 'https://webhook.site/unique-url',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    event: 'webhook.test',
+                    timestamp: new Date().toISOString(),
+                    data: { message: 'Test webhook payload' }
+                }, null, 2),
+                description: 'Test webhook payload delivery'
+            },
+            'weather-api': {
+                method: 'GET',
+                url: 'https://api.openweathermap.org/data/2.5/weather?q=London&appid=YOUR_API_KEY',
+                headers: { 'Accept': 'application/json' },
+                body: '',
+                description: 'Get weather data from OpenWeather API (requires API key)'
+            },
+            'cat-facts': {
+                method: 'GET',
+                url: 'https://catfact.ninja/fact',
+                headers: { 'Accept': 'application/json' },
+                body: '',
+                description: 'Get random cat facts'
+            },
+            'dog-facts': {
+                method: 'GET',
+                url: 'https://dog-api.kinduff.com/api/facts',
+                headers: { 'Accept': 'application/json' },
+                body: '',
+                description: 'Get random dog facts'
+            },
+            'crypto-prices': {
+                method: 'GET',
+                url: 'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd',
+                headers: { 'Accept': 'application/json' },
+                body: '',
+                description: 'Get cryptocurrency prices from CoinGecko'
+            },
+            'random-user': {
+                method: 'GET',
+                url: 'https://randomuser.me/api/',
+                headers: { 'Accept': 'application/json' },
+                body: '',
+                description: 'Generate random user data'
+            },
+            'ip-geolocation': {
+                method: 'GET',
+                url: 'https://ipapi.co/json/',
+                headers: { 'Accept': 'application/json' },
+                body: '',
+                description: 'Get geolocation information for your IP'
+            },
+            'quote-api': {
+                method: 'GET',
+                url: 'https://api.quotable.io/random',
+                headers: { 'Accept': 'application/json' },
+                body: '',
+                description: 'Get random inspirational quotes'
+            },
+            'spacex-api': {
+                method: 'GET',
+                url: 'https://api.spacexdata.com/v4/launches/latest',
+                headers: { 'Accept': 'application/json' },
+                body: '',
+                description: 'Get latest SpaceX launch information'
+            },
+            'pokemon-api': {
+                method: 'GET',
+                url: 'https://pokeapi.co/api/v2/pokemon/pikachu',
+                headers: { 'Accept': 'application/json' },
+                body: '',
+                description: 'Get Pokémon information from PokéAPI'
+            },
+            'chuck-norris': {
+                method: 'GET',
+                url: 'https://api.chucknorris.io/jokes/random',
+                headers: { 'Accept': 'application/json' },
+                body: '',
+                description: 'Get random Chuck Norris jokes'
             }
         };
 
@@ -2222,6 +2313,12 @@ class RESTerX {
         document.getElementById('quickHistory')?.addEventListener('click', () => this.showHistoryTimelineModal());
         document.getElementById('quickExport')?.addEventListener('click', () => this.showCodeExportModal());
         document.getElementById('quickShare')?.addEventListener('click', () => this.shareRequest());
+
+        // New productivity features
+        document.getElementById('quickBulkTest')?.addEventListener('click', () => this.showBulkTestModal());
+        document.getElementById('quickCompare')?.addEventListener('click', () => this.showCompareModal());
+        document.getElementById('startBulkTest')?.addEventListener('click', () => this.runBulkTest());
+        document.getElementById('startCompare')?.addEventListener('click', () => this.compareResponses());
 
         // Template Gallery
         document.getElementById('templatesToggle')?.addEventListener('click', () => this.toggleTemplateGallery());
@@ -2974,6 +3071,208 @@ class RESTerX {
             notification.style.transform = 'translateX(-50%) translateY(-100%)';
             setTimeout(() => notification.remove(), 300);
         }, 4000);
+    }
+
+    // Bulk Test Modal Functions
+    showBulkTestModal() {
+        const modal = document.getElementById('bulkTestModal');
+        modal.style.display = 'flex';
+        document.getElementById('bulkTestResults').style.display = 'none';
+        
+        const closeBtn = modal.querySelector('.modal-close');
+        closeBtn.onclick = () => this.closeModal(modal);
+        modal.onclick = (e) => {
+            if (e.target === modal) {
+                this.closeModal(modal);
+            }
+        };
+    }
+
+    async runBulkTest() {
+        const count = parseInt(document.getElementById('bulkTestCount').value) || 10;
+        const delay = parseInt(document.getElementById('bulkTestDelay').value) || 100;
+        const parallel = document.getElementById('bulkTestParallel').checked;
+
+        // Get current request data
+        const method = document.getElementById('methodSelect').value;
+        const url = document.getElementById('urlInput').value;
+
+        if (!url) {
+            this.showNotification('Please enter a URL first', 'error');
+            return;
+        }
+
+        // Show results section
+        document.getElementById('bulkTestResults').style.display = 'block';
+        
+        const results = {
+            total: count,
+            completed: 0,
+            successful: 0,
+            failed: 0,
+            totalTime: 0,
+            minTime: Infinity,
+            maxTime: 0,
+            responses: []
+        };
+
+        const updateProgress = () => {
+            const progress = (results.completed / results.total) * 100;
+            document.querySelector('#bulkTestProgress .progress-fill').style.width = `${progress}%`;
+            
+            const avgTime = results.totalTime / results.completed;
+            document.getElementById('bulkTestStats').innerHTML = `
+                <div class="stat-item">
+                    <div class="stat-label">Completed</div>
+                    <div class="stat-value">${results.completed}/${results.total}</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Success Rate</div>
+                    <div class="stat-value">${((results.successful / results.completed) * 100).toFixed(1)}%</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Avg Response Time</div>
+                    <div class="stat-value">${(avgTime / 1000000).toFixed(0)}ms</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Min/Max Time</div>
+                    <div class="stat-value">${(results.minTime / 1000000).toFixed(0)}/${(results.maxTime / 1000000).toFixed(0)}ms</div>
+                </div>
+            `;
+        };
+
+        const makeRequest = async () => {
+            const startTime = performance.now();
+            try {
+                const response = await fetch(url, { method });
+                const endTime = performance.now();
+                const responseTime = (endTime - startTime) * 1000000; // Convert to nanoseconds
+                
+                results.completed++;
+                results.successful++;
+                results.totalTime += responseTime;
+                results.minTime = Math.min(results.minTime, responseTime);
+                results.maxTime = Math.max(results.maxTime, responseTime);
+                
+                updateProgress();
+            } catch (error) {
+                results.completed++;
+                results.failed++;
+                updateProgress();
+            }
+        };
+
+        if (parallel) {
+            // Send all requests in parallel
+            const promises = Array(count).fill().map(() => makeRequest());
+            await Promise.all(promises);
+        } else {
+            // Send requests sequentially with delay
+            for (let i = 0; i < count; i++) {
+                await makeRequest();
+                if (i < count - 1 && delay > 0) {
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                }
+            }
+        }
+
+        this.showNotification(`Bulk test completed: ${results.successful}/${results.total} successful`, 'success');
+    }
+
+    // Response Comparison Modal Functions
+    showCompareModal() {
+        const modal = document.getElementById('compareModal');
+        modal.style.display = 'flex';
+        document.getElementById('compareResults').style.display = 'none';
+        
+        // Populate history dropdowns
+        const select1 = document.getElementById('compareSelect1');
+        const select2 = document.getElementById('compareSelect2');
+        
+        select1.innerHTML = '<option value="">Select from history...</option>';
+        select2.innerHTML = '<option value="">Select from history...</option>';
+        
+        this.history.forEach((item, index) => {
+            const option = `<option value="${index}">${item.method} ${item.url} - ${new Date(item.timestamp).toLocaleString()}</option>`;
+            select1.innerHTML += option;
+            select2.innerHTML += option;
+        });
+        
+        const closeBtn = modal.querySelector('.modal-close');
+        closeBtn.onclick = () => this.closeModal(modal);
+        modal.onclick = (e) => {
+            if (e.target === modal) {
+                this.closeModal(modal);
+            }
+        };
+    }
+
+    compareResponses() {
+        const index1 = document.getElementById('compareSelect1').value;
+        const index2 = document.getElementById('compareSelect2').value;
+        
+        if (!index1 || !index2) {
+            this.showNotification('Please select two responses to compare', 'error');
+            return;
+        }
+        
+        if (index1 === index2) {
+            this.showNotification('Please select different responses', 'error');
+            return;
+        }
+        
+        const response1 = this.history[parseInt(index1)];
+        const response2 = this.history[parseInt(index2)];
+        
+        document.getElementById('compareResults').style.display = 'block';
+        
+        // Display responses
+        document.getElementById('compareResponse1').innerHTML = `
+            <div class="compare-info">
+                <strong>Status:</strong> ${response1.response.statusCode}<br>
+                <strong>Time:</strong> ${new Date(response1.timestamp).toLocaleString()}<br>
+                <strong>Response Time:</strong> ${(response1.response.responseTime / 1000000).toFixed(0)}ms
+            </div>
+            <pre class="compare-body">${JSON.stringify(response1, null, 2)}</pre>
+        `;
+        
+        document.getElementById('compareResponse2').innerHTML = `
+            <div class="compare-info">
+                <strong>Status:</strong> ${response2.response.statusCode}<br>
+                <strong>Time:</strong> ${new Date(response2.timestamp).toLocaleString()}<br>
+                <strong>Response Time:</strong> ${(response2.response.responseTime / 1000000).toFixed(0)}ms
+            </div>
+            <pre class="compare-body">${JSON.stringify(response2, null, 2)}</pre>
+        `;
+        
+        // Find differences
+        const differences = [];
+        
+        if (response1.response.statusCode !== response2.response.statusCode) {
+            differences.push(`Status code: ${response1.response.statusCode} vs ${response2.response.statusCode}`);
+        }
+        
+        const timeDiff = Math.abs((response1.response.responseTime - response2.response.responseTime) / 1000000);
+        if (timeDiff > 100) {
+            differences.push(`Response time difference: ${timeDiff.toFixed(0)}ms`);
+        }
+        
+        if (response1.method !== response2.method) {
+            differences.push(`Method: ${response1.method} vs ${response2.method}`);
+        }
+        
+        if (response1.url !== response2.url) {
+            differences.push(`URL: Different endpoints`);
+        }
+        
+        const diffList = document.getElementById('diffList');
+        if (differences.length === 0) {
+            diffList.innerHTML = '<li class="diff-same">No significant differences found</li>';
+        } else {
+            diffList.innerHTML = differences.map(diff => `<li class="diff-item">⚠️ ${diff}</li>`).join('');
+        }
+        
+        this.showNotification('Responses compared successfully', 'success');
     }
 }
 

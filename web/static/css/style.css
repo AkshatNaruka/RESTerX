@@ -4293,3 +4293,152 @@ button:not(:disabled):active, .tab-btn:active, .response-tab-btn:active {
         min-width: auto;
     }
 }
+
+/* Bulk Test and Compare Modal Styles */
+.progress-bar {
+    width: 100%;
+    height: 30px;
+    background: var(--bg-secondary);
+    border-radius: 15px;
+    overflow: hidden;
+    margin: 10px 0;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary-color), #00ff88);
+    transition: width 0.3s ease;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.stat-item {
+    background: var(--bg-secondary);
+    padding: 15px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 5px;
+}
+
+.stat-value {
+    font-size: 20px;
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+.compare-controls {
+    display: flex;
+    gap: 15px;
+    align-items: flex-end;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.compare-select {
+    flex: 1;
+    min-width: 200px;
+}
+
+.compare-select label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+}
+
+.compare-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.compare-column {
+    background: var(--bg-secondary);
+    padding: 15px;
+    border-radius: 8px;
+    overflow: auto;
+}
+
+.compare-column h4 {
+    margin-bottom: 10px;
+    color: var(--primary-color);
+}
+
+.compare-response {
+    max-height: 400px;
+    overflow: auto;
+}
+
+.compare-info {
+    background: var(--bg-hover);
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 10px;
+    font-size: 13px;
+}
+
+.compare-body {
+    background: var(--bg-primary);
+    padding: 10px;
+    border-radius: 5px;
+    font-size: 12px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.compare-diff {
+    background: var(--bg-secondary);
+    padding: 15px;
+    border-radius: 8px;
+}
+
+.compare-diff h4 {
+    margin-bottom: 10px;
+    color: var(--primary-color);
+}
+
+#diffList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.diff-item {
+    padding: 8px;
+    margin: 5px 0;
+    background: var(--bg-hover);
+    border-radius: 5px;
+    border-left: 3px solid var(--warning-color);
+}
+
+.diff-same {
+    padding: 8px;
+    background: var(--bg-hover);
+    border-radius: 5px;
+    color: var(--success-color);
+    border-left: 3px solid var(--success-color);
+}
+
+@media (max-width: 768px) {
+    .compare-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .compare-controls {
+        flex-direction: column;
+    }
+    
+    .compare-select {
+        width: 100%;
+    }
+}
