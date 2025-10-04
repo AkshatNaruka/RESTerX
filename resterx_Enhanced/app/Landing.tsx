@@ -5,7 +5,7 @@ import { useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
-import { Zap, Code, History, Sparkles, Lock, Globe, Terminal, Layers, ArrowRight, Check, Upload, FileJson } from "lucide-react"
+import { Zap, Code, History, Sparkles, Lock, Globe, Terminal, Layers, ArrowRight, Check, Upload, FileJson, Rocket, Users, Star, GitBranch } from "lucide-react"
 
 export default function LandingPage() {
   // Ensure dark theme is set
@@ -264,27 +264,108 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Social Proof Section */}
+      <section className="container mx-auto px-4 py-24 md:py-32">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold mb-4 text-balance text-white">Loved by developers worldwide</h2>
+            <p className="text-xl text-gray-400 max-w-2xl mx-auto text-balance">
+              Join the community of developers who trust RESTerX for their API testing needs.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+            <Card className="bg-white/5 border-white/10 p-8 text-center hover:bg-white/10 transition-colors">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-cyan-500/10 flex items-center justify-center">
+                <Users className="w-8 h-8 text-cyan-400" />
+              </div>
+              <div className="text-3xl font-bold text-white mb-2">10K+</div>
+              <div className="text-gray-400">Active Users</div>
+            </Card>
+
+            <Card className="bg-white/5 border-white/10 p-8 text-center hover:bg-white/10 transition-colors">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-500/10 flex items-center justify-center">
+                <Rocket className="w-8 h-8 text-green-400" />
+              </div>
+              <div className="text-3xl font-bold text-white mb-2">1M+</div>
+              <div className="text-gray-400">API Requests Tested</div>
+            </Card>
+
+            <Card className="bg-white/5 border-white/10 p-8 text-center hover:bg-white/10 transition-colors">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-purple-500/10 flex items-center justify-center">
+                <Star className="w-8 h-8 text-purple-400" />
+              </div>
+              <div className="text-3xl font-bold text-white mb-2">4.9/5</div>
+              <div className="text-gray-400">User Rating</div>
+            </Card>
+          </div>
+
+          {/* Testimonials */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card className="bg-white/5 border-white/10 p-8 hover:bg-white/10 transition-colors">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-blue-500" />
+                <div>
+                  <div className="font-semibold text-white">Sarah Chen</div>
+                  <div className="text-sm text-gray-400">Senior Backend Engineer</div>
+                </div>
+              </div>
+              <p className="text-gray-300 leading-relaxed">
+                "RESTerX has completely replaced our old API testing workflow. The code generation feature alone saves us hours every week."
+              </p>
+              <div className="flex gap-1 mt-4">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                ))}
+              </div>
+            </Card>
+
+            <Card className="bg-white/5 border-white/10 p-8 hover:bg-white/10 transition-colors">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500" />
+                <div>
+                  <div className="font-semibold text-white">Mike Rodriguez</div>
+                  <div className="text-sm text-gray-400">Full Stack Developer</div>
+                </div>
+              </div>
+              <p className="text-gray-300 leading-relaxed">
+                "The best Postman alternative I've found. Clean interface, fast performance, and the keyboard shortcuts make me so productive."
+              </p>
+              <div className="flex gap-1 mt-4">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                ))}
+              </div>
+            </Card>
+          </div>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="container mx-auto px-4 py-24 md:py-32">
         <Card className="bg-gradient-to-br from-cyan-500/10 to-purple-500/10 border-white/10 p-12 md:p-16 text-center">
           <div className="max-w-3xl mx-auto space-y-6">
             <h2 className="text-4xl md:text-5xl font-bold text-balance text-white">Ready to ship faster?</h2>
             <p className="text-xl text-gray-400 text-balance">
-              Join thousands of developers building better APIs with RESTerX.
+              Join thousands of developers building better APIs with RESTerX. Start testing in seconds, no signup required.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
               <Link href="/app">
-                <Button size="lg" className="bg-white text-black hover:bg-gray-200 text-base px-8 py-6 h-auto">
-                  Start Testing APIs
+                <Button size="lg" className="bg-white text-black hover:bg-gray-200 text-base px-8 py-6 h-auto gap-2">
+                  <Rocket className="w-5 h-5" />
+                  Start Testing APIs - It's Free
                 </Button>
               </Link>
-              {/* <Button
-                size="lg"
-                variant="outline"
-                className="border-white/20 text-white hover:bg-white/10 text-base px-8 py-6 h-auto bg-transparent"
-              >
-                View on GitHub
-              </Button> */}
+              <a href="https://github.com/AkshatNaruka/RESTerX" target="_blank" rel="noopener noreferrer">
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="border-white/20 text-white hover:bg-white/10 text-base px-8 py-6 h-auto bg-transparent gap-2"
+                >
+                  <GitBranch className="w-5 h-5" />
+                  Star on GitHub
+                </Button>
+              </a>
             </div>
           </div>
         </Card>

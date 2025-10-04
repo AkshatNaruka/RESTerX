@@ -34,6 +34,14 @@ import {
   Upload,
   Target,
   Scale,
+  PlayCircle,
+  StopCircle,
+  Activity,
+  Network,
+  Search,
+  Filter,
+  TrendingUp,
+  AlertCircle,
 } from "lucide-react"
 import Link from "next/link"
 
@@ -61,6 +69,12 @@ interface CookieItem {
   expires?: string
   httpOnly?: boolean
   secure?: boolean
+}
+
+interface Environment {
+  id: number
+  name: string
+  variables: { key: string; value: string }[]
 }
 
 interface HistoryItem {
@@ -352,6 +366,15 @@ export default function RESTerXApp() {
   // Retry configuration states
   const [retryCount, setRetryCount] = useState(0)
   const [retryDelay, setRetryDelay] = useState(2)
+  
+  // Environment variables states
+  const [environments, setEnvironments] = useState<Environment[]>([])
+  const [activeEnvironment, setActiveEnvironment] = useState<number | null>(null)
+  const [showEnvironmentModal, setShowEnvironmentModal] = useState(false)
+  const [newEnvironmentName, setNewEnvironmentName] = useState("")
+  const [environmentVariables, setEnvironmentVariables] = useState<{ key: string; value: string }[]>([
+    { key: "", value: "" }
+  ])
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", theme === "dark")
