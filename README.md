@@ -25,6 +25,11 @@ RESTerX is a powerful API testing tool that supports both command-line interface
   - Pre-request scripts and dynamic variables
   - Keyboard shortcuts for productivity
   - Export/import functionality
+  - **Query Parameters UI**: Manage URL query parameters with enable/disable toggles
+  - **Path Variables**: Auto-detect and replace `{{variable}}` syntax in URLs
+  - **Cookie Management**: View and manage cookies from API responses
+  - **OAuth 2.0 Support**: Full OAuth 2.0 authentication alongside Bearer and Basic auth
+  - **Response Size Display**: Shows response size in human-readable format (B/KB/MB/GB)
 - **Optimized Performance**: Fast page loads and smooth interactions
 - **Fully Client-Side**: No backend required, runs entirely in the browser
 
@@ -81,12 +86,15 @@ npm start
 
 #### React Version Features:
 1. **Select HTTP Method**: Choose from GET, POST, PUT, PATCH, DELETE, HEAD
-2. **Enter URL**: Type your API endpoint with autocomplete
-3. **Add Headers**: Dynamic header management
-4. **Set Request Body**: Multiple body types with syntax highlighting
-5. **Configure Auth**: Bearer token or Basic authentication
-6. **Send Request**: Keyboard shortcuts available (⌘↵)
-7. **View Response**: Detailed status, headers, and formatted body
+2. **Enter URL**: Type your API endpoint with autocomplete and path variables support (`{{variable}}` syntax)
+3. **Query Parameters**: Manage URL query parameters with checkboxes to enable/disable
+4. **Add Headers**: Dynamic header management
+5. **Set Request Body**: Multiple body types with syntax highlighting
+6. **Configure Auth**: Bearer token, Basic authentication, or OAuth 2.0
+7. **Send Request**: Keyboard shortcuts available (⌘↵)
+8. **View Response**: Detailed status, headers, formatted body, and cookies
+9. **Response Metrics**: Response time in milliseconds and size in bytes/KB/MB
+10. **Cookie Management**: View and manage cookies received from API responses
 8. **History**: Track all requests with filtering options
 9. **Collections**: Organize requests into collections
 10. **Code Generation**: Generate code snippets in multiple languages
