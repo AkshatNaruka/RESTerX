@@ -2090,7 +2090,7 @@ class RESTerX {
                 document.querySelector('input[name="bodyType"][value="json"]').checked = true;
                 this.handleBodyTypeChange('json');
             }
-            document.getElementById('bodyText').value = template.body;
+            document.getElementById('requestBody').value = template.body;
         }
 
         // Show notification
