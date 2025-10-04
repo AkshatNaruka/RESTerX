@@ -1,37 +1,35 @@
 # RESTerX
 
-RESTerX is a powerful API testing tool that supports both command-line interface (CLI) and web interface. It supports the GET, POST, PUT, PATCH, HEAD, and DELETE HTTP methods with advanced features for testing APIs both locally and online.
+RESTerX is a powerful, modern API testing platform that supports both command-line interface (CLI) and web interface. It features a beautiful dark theme with terminal-inspired design and provides professional-grade API testing capabilities.
 
 ## ✨ Features
 
-### 🖥️ Web Interface (Go-based)
-- **Modern Postman-like Interface**: Clean, intuitive design for easy API testing
-- **Dark/Light Theme**: Toggle between themes with persistent settings
-- **Request History**: Automatic saving of requests using browser localStorage
-- **Custom Headers**: Add, edit, and remove HTTP headers
-- **Request Body Support**: JSON, raw text, and form data with syntax highlighting
-- **Authentication**: Bearer token and Basic auth support
-- **Response Formatting**: JSON formatting and copy functionality
-- **Real-time Response**: Status codes, response time, and detailed headers
-- **Responsive Design**: Works on desktop, tablet, and mobile devices
+### 🎨 Modern Design
+- **Terminal-Like Favicon**: Professional API testing theme with custom icons
+- **Dark/Light Theme**: Beautiful dark theme optimized for developers
+- **Responsive Design**: Works perfectly on desktop, tablet, and mobile devices
+- **PWA Support**: Install as a progressive web app on any device
 
 ### ⚛️ React Version (Next.js)
-- **Enhanced UI/UX**: Built with Next.js, React 18, and TypeScript
+- **Enhanced UI/UX**: Built with Next.js 14, React 18, and TypeScript
 - **Modern Component Library**: Powered by Radix UI and Tailwind CSS
 - **Advanced Features**: 
-  - Code generation in multiple languages (cURL, JavaScript, Python, Go)
-  - Request collections and organization
-  - Environment variables support
-  - Pre-request scripts and dynamic variables
-  - Keyboard shortcuts for productivity
-  - Export/import functionality
-  - **Query Parameters UI**: Manage URL query parameters with enable/disable toggles
-  - **Path Variables**: Auto-detect and replace `{{variable}}` syntax in URLs
-  - **Cookie Management**: View and manage cookies from API responses
-  - **OAuth 2.0 Support**: Full OAuth 2.0 authentication alongside Bearer and Basic auth
-  - **Response Size Display**: Shows response size in human-readable format (B/KB/MB/GB)
+  - 🔧 **Environment Variables**: Manage multiple environments with `{{variable}}` syntax
+  - 💻 **9+ Language Code Generation**: Export to cURL, JavaScript, Python, Node.js, Go, PHP, Ruby, Rust, Swift
+  - 📁 **Request Collections**: Organize and manage your API requests
+  - 🔐 **Multiple Auth Types**: Bearer token, Basic auth, OAuth 2.0
+  - 📊 **Query Parameters UI**: Visual management with enable/disable toggles
+  - 🔗 **Path Variables**: Auto-detect and replace `{{variable}}` syntax in URLs
+  - 🍪 **Cookie Management**: View and manage cookies from API responses
+  - 📏 **Response Metrics**: Response time in milliseconds and size in bytes/KB/MB
+  - 🎯 **Bulk Testing**: Test APIs multiple times with configurable settings
+  - 🔍 **Response Comparison**: Compare responses side-by-side
+  - 🎨 **Toast Notifications**: Beautiful feedback for all actions
+  - ⌨️ **Keyboard Shortcuts**: Productivity-focused navigation
+  - 📤 **Import/Export**: Support for Postman collections
 - **Optimized Performance**: Fast page loads and smooth interactions
 - **Fully Client-Side**: No backend required, runs entirely in the browser
+- **SEO Optimized**: Complete meta tags, Open Graph images, and sitemap
 
 ### 🖥️ CLI Interface
 - **Interactive Menu**: Easy-to-use command-line interface
