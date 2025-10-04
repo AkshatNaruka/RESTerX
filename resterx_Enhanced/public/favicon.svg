@@ -1,0 +1,21 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Terminal background -->
+  <rect width="32" height="32" rx="4" fill="#1a1a1a"/>
+  
+  <!-- Terminal border -->
+  <rect x="1" y="1" width="30" height="30" rx="3" stroke="#00ff88" stroke-width="1.5" fill="none"/>
+  
+  <!-- Terminal header dots -->
+  <circle cx="5" cy="5" r="1.5" fill="#ff5f56"/>
+  <circle cx="9" cy="5" r="1.5" fill="#ffbd2e"/>
+  <circle cx="13" cy="5" r="1.5" fill="#27c93f"/>
+  
+  <!-- Terminal prompt ">" -->
+  <path d="M6 14 L10 17 L6 20" stroke="#00ff88" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  
+  <!-- Cursor -->
+  <rect x="12" y="16" width="8" height="2" fill="#00ff88" opacity="0.8"/>
+  
+  <!-- API text hint -->
+  <text x="6" y="27" font-family="monospace" font-size="6" fill="#00ff88" opacity="0.6">API</text>
+</svg>

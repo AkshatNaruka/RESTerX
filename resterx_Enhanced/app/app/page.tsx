@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { toast } from "sonner"
 import {
   Moon,
   Sun,
@@ -34,6 +35,15 @@ import {
   Upload,
   Target,
   Scale,
+  PlayCircle,
+  StopCircle,
+  Activity,
+  Network,
+  Search,
+  Filter,
+  TrendingUp,
+  AlertCircle,
+  Globe,
 } from "lucide-react"
 import Link from "next/link"
 
@@ -61,6 +71,12 @@ interface CookieItem {
   expires?: string
   httpOnly?: boolean
   secure?: boolean
+}
+
+interface Environment {
+  id: number
+  name: string
+  variables: { key: string; value: string }[]
 }
 
 interface HistoryItem {
@@ -352,6 +368,15 @@ export default function RESTerXApp() {
   // Retry configuration states
   const [retryCount, setRetryCount] = useState(0)
   const [retryDelay, setRetryDelay] = useState(2)
+  
+  // Environment variables states
+  const [environments, setEnvironments] = useState<Environment[]>([])
+  const [activeEnvironment, setActiveEnvironment] = useState<number | null>(null)
+  const [showEnvironmentModal, setShowEnvironmentModal] = useState(false)
+  const [newEnvironmentName, setNewEnvironmentName] = useState("")
+  const [environmentVariables, setEnvironmentVariables] = useState<{ key: string; value: string }[]>([
+    { key: "", value: "" }
+  ])
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", theme === "dark")
@@ -368,6 +393,16 @@ export default function RESTerXApp() {
     if (savedCollections) {
       setCollections(JSON.parse(savedCollections))
     }
+    
+    const savedEnvironments = localStorage.getItem("resterx-environments")
+    if (savedEnvironments) {
+      setEnvironments(JSON.parse(savedEnvironments))
+    }
+    
+    const savedActiveEnv = localStorage.getItem("resterx-active-environment")
+    if (savedActiveEnv) {
+      setActiveEnvironment(Number(savedActiveEnv))
+    }
   }, [])
 
   useEffect(() => {
@@ -379,6 +414,18 @@ export default function RESTerXApp() {
     // Save collections to localStorage
     localStorage.setItem("resterx-collections", JSON.stringify(collections))
   }, [collections])
+  
+  useEffect(() => {
+    // Save environments to localStorage
+    localStorage.setItem("resterx-environments", JSON.stringify(environments))
+  }, [environments])
+  
+  useEffect(() => {
+    // Save active environment to localStorage
+    if (activeEnvironment !== null) {
+      localStorage.setItem("resterx-active-environment", String(activeEnvironment))
+    }
+  }, [activeEnvironment])
 
   useEffect(() => {
     // Extract path variables from URL
@@ -503,10 +550,72 @@ export default function RESTerXApp() {
       setBodyType(template.body ? "json" : "none")
     }
   }
+  
+  // Environment variable helper functions
+  const replaceEnvironmentVariables = (text: string): string => {
+    if (!activeEnvironment) return text
+    
+    const env = environments.find(e => e.id === activeEnvironment)
+    if (!env) return text
+    
+    let result = text
+    env.variables.forEach(variable => {
+      if (variable.key && variable.value) {
+        const regex = new RegExp(`{{\\s*${variable.key}\\s*}}`, 'g')
+        result = result.replace(regex, variable.value)
+      }
+    })
+    
+    return result
+  }
+  
+  const createEnvironment = () => {
+    if (!newEnvironmentName.trim()) {
+      toast.error("Please enter an environment name")
+      return
+    }
+    
+    const variables = environmentVariables.filter(v => v.key.trim() !== "")
+    
+    const newEnv: Environment = {
+      id: Date.now(),
+      name: newEnvironmentName.trim(),
+      variables: variables
+    }
+    
+    setEnvironments([...environments, newEnv])
+    setShowEnvironmentModal(false)
+    setNewEnvironmentName("")
+    setEnvironmentVariables([{ key: "", value: "" }])
+    toast.success(`Environment "${newEnv.name}" created successfully`)
+  }
+  
+  const deleteEnvironment = (id: number) => {
+    if (confirm("Are you sure you want to delete this environment?")) {
+      setEnvironments(environments.filter(e => e.id !== id))
+      if (activeEnvironment === id) {
+        setActiveEnvironment(null)
+      }
+    }
+  }
+  
+  const addEnvironmentVariable = () => {
+    setEnvironmentVariables([...environmentVariables, { key: "", value: "" }])
+  }
+  
+  const removeEnvironmentVariable = (index: number) => {
+    setEnvironmentVariables(environmentVariables.filter((_, i) => i !== index))
+  }
+  
+  const updateEnvironmentVariable = (index: number, field: "key" | "value", value: string) => {
+    const newVars = [...environmentVariables]
+    newVars[index][field] = value
+    setEnvironmentVariables(newVars)
+  }
 
   const createCollection = () => {
     if (!newCollectionName.trim()) {
-      alert("Please enter a collection name")
+      toast.error("Please enter a collection name")
       return
     }
 
@@ -522,21 +631,22 @@ export default function RESTerXApp() {
     setNewCollectionName("")
     setNewCollectionDescription("")
     setSidebarTab("collections")
+    toast.success(`Collection "${newCollection.name}" created successfully`)
   }
 
   const saveToCollection = () => {
     if (!url) {
-      alert("Please enter a URL to save")
+      toast.error("Please enter a URL to save")
       return
     }
 
     if (!requestName.trim()) {
-      alert("Please enter a request name")
+      toast.error("Please enter a request name")
       return
     }
 
     if (selectedCollectionId === null) {
-      alert("Please select a collection")
+      toast.error("Please select a collection")
       return
     }
 
@@ -578,6 +688,7 @@ export default function RESTerXApp() {
     setRequestName("")
     setSelectedCollectionId(null)
     setSidebarTab("collections")
+    toast.success(`Request "${savedRequest.name}" saved to collection`)
   }
 
   const loadSavedRequest = (request: SavedRequest) => {
@@ -804,20 +915,20 @@ export default function RESTerXApp() {
     try {
       const requestHeaders: Record<string, string> = {}
 
-      // Add custom headers
+      // Add custom headers with environment variable replacement
       headers.forEach((h) => {
         if (h.key && h.value) {
-          requestHeaders[h.key] = h.value
+          requestHeaders[replaceEnvironmentVariables(h.key)] = replaceEnvironmentVariables(h.value)
         }
       })
 
-      // Add auth headers
+      // Add auth headers with environment variable replacement
       if (authType === "bearer" && bearerToken) {
-        requestHeaders["Authorization"] = `Bearer ${bearerToken}`
+        requestHeaders["Authorization"] = `Bearer ${replaceEnvironmentVariables(bearerToken)}`
       } else if (authType === "oauth2" && bearerToken) {
-        requestHeaders["Authorization"] = `Bearer ${bearerToken}`
+        requestHeaders["Authorization"] = `Bearer ${replaceEnvironmentVariables(bearerToken)}`
       } else if (authType === "basic" && basicUsername && basicPassword) {
-        const credentials = btoa(`${basicUsername}:${basicPassword}`)
+        const credentials = btoa(`${replaceEnvironmentVariables(basicUsername)}:${replaceEnvironmentVariables(basicPassword)}`)
         requestHeaders["Authorization"] = `Basic ${credentials}`
       }
 
@@ -832,11 +943,11 @@ export default function RESTerXApp() {
       }
 
       if (body && ["POST", "PUT", "PATCH"].includes(method)) {
-        options.body = body
+        options.body = replaceEnvironmentVariables(body)
       }
 
-      // Build final URL with query params and path variables
-      const finalUrl = buildUrlWithParams()
+      // Build final URL with query params and path variables (with env var replacement)
+      const finalUrl = replaceEnvironmentVariables(buildUrlWithParams())
 
       const res = await fetch(finalUrl, options)
       const responseTime = Date.now() - startTime
@@ -870,6 +981,13 @@ export default function RESTerXApp() {
         timestamp: new Date().toISOString(),
       }
       setHistory((prev) => [historyItem, ...prev].slice(0, 100))
+      
+      // Show success toast
+      if (res.status >= 200 && res.status < 300) {
+        toast.success(`Request completed successfully (${res.status})`)
+      } else if (res.status >= 400) {
+        toast.error(`Request failed with status ${res.status}`)
+      }
     } catch (error: any) {
       const responseTime = Date.now() - startTime
       setResponse({
@@ -891,6 +1009,9 @@ export default function RESTerXApp() {
         timestamp: new Date().toISOString(),
       }
       setHistory((prev) => [historyItem, ...prev].slice(0, 100))
+      
+      // Show error toast
+      toast.error(`Request failed: ${error.message}`)
     } finally {
       setLoading(false)
     }
@@ -967,6 +1088,7 @@ export default function RESTerXApp() {
   const copyResponse = () => {
     if (response?.body) {
       navigator.clipboard.writeText(response.body)
+      toast.success("Response copied to clipboard")
     }
   }
 
@@ -979,12 +1101,14 @@ export default function RESTerXApp() {
       a.download = `response-${Date.now()}.json`
       a.click()
       URL.revokeObjectURL(url)
+      toast.success("Response downloaded")
     }
   }
 
   const clearHistory = () => {
     setHistory([])
     localStorage.removeItem("resterx-history")
+    toast.info("History cleared")
   }
 
   const loadFromHistory = (item: HistoryItem) => {
@@ -1080,6 +1204,85 @@ func main() {
     
     fmt.Println(string(body))
 }`
+
+      case "php":
+        return `<?php
+$url = "${url}";
+$headers = ${JSON.stringify(Object.entries(headersObj).map(([k, v]) => `${k}: ${v}`), null, 2).replace(/"/g, "'")};
+
+$options = [
+    'http' => [
+        'method' => '${method}',
+        'header' => implode("\\r\\n", $headers),
+        ${body && ["POST", "PUT", "PATCH"].includes(method) ? `'content' => '${body.replace(/'/g, "\\'")}',` : ""}
+    ]
+];
+
+$context = stream_context_create($options);
+$response = file_get_contents($url, false, $context);
+echo $response;
+?>`
+
+      case "ruby":
+        return `require 'net/http'
+require 'json'
+
+uri = URI('${url}')
+http = Net::HTTP.new(uri.host, uri.port)
+http.use_ssl = true if uri.scheme == 'https'
+
+request = Net::HTTP::${method.charAt(0) + method.slice(1).toLowerCase()}.new(uri)
+${Object.entries(headersObj)
+  .map(([key, value]) => `request['${key}'] = '${value}'`)
+  .join("\n")}
+${body && ["POST", "PUT", "PATCH"].includes(method) ? `request.body = '${body.replace(/'/g, "\\'")}'` : ""}
+
+response = http.request(request)
+puts response.body`
+
+      case "rust":
+        return `use reqwest;
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let client = reqwest::Client::new();
+    let response = client
+        .${method.toLowerCase()}("${url}")
+        ${Object.entries(headersObj)
+          .map(([key, value]) => `.header("${key}", "${value}")`)
+          .join("\n        ")}
+        ${body && ["POST", "PUT", "PATCH"].includes(method) ? `.body(r#"${body}"#)` : ""}
+        .send()
+        .await?
+        .text()
+        .await?;
+    
+    println!("{}", response);
+    Ok(())
+}`
+
+      case "swift":
+        return `import Foundation
+
+let url = URL(string: "${url}")!
+var request = URLRequest(url: url)
+request.httpMethod = "${method}"
+
+${Object.entries(headersObj)
+  .map(([key, value]) => `request.setValue("${value}", forHTTPHeaderField: "${key}")`)
+  .join("\n")}
+
+${body && ["POST", "PUT", "PATCH"].includes(method) ? `let body = """
+${body}
+"""
+request.httpBody = body.data(using: .utf8)` : ""}
+
+let task = URLSession.shared.dataTask(with: request) { data, response, error in
+    if let data = data, let response = String(data: data, encoding: .utf8) {
+        print(response)
+    }
+}
+task.resume()`
 
       default:
         return "// Select a language to generate code"
@@ -1319,6 +1522,142 @@ func main() {
                 </DialogContent>
               </Dialog>
 
+              {/* Environment Variables */}
+              <Dialog open={showEnvironmentModal} onOpenChange={setShowEnvironmentModal}>
+                <DialogTrigger asChild>
+                  <Button variant="ghost" size="sm" title="Environment Variables">
+                    <Globe className="w-4 h-4 mr-2" />
+                    {activeEnvironment 
+                      ? environments.find(e => e.id === activeEnvironment)?.name 
+                      : "No Environment"}
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-3xl">
+                  <DialogHeader>
+                    <DialogTitle>Environment Variables</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    {/* Active Environment Selector */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Active Environment</label>
+                      <Select 
+                        value={activeEnvironment?.toString() || "none"} 
+                        onValueChange={(value) => setActiveEnvironment(value === "none" ? null : parseInt(value))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select an environment" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">No Environment</SelectItem>
+                          {environments.map(env => (
+                            <SelectItem key={env.id} value={env.id.toString()}>
+                              {env.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Existing Environments List */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-semibold">Saved Environments</h4>
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            setNewEnvironmentName("")
+                            setEnvironmentVariables([{ key: "", value: "" }])
+                          }}
+                        >
+                          <Plus className="w-4 h-4 mr-1" />
+                          New Environment
+                        </Button>
+                      </div>
+                      
+                      <div className="space-y-2 max-h-40 overflow-y-auto">
+                        {environments.map(env => (
+                          <Card key={env.id} className="p-3">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <div className="font-medium">{env.name}</div>
+                                <div className="text-xs text-muted-foreground">
+                                  {env.variables.length} variable(s)
+                                </div>
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => deleteEnvironment(env.id)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Create New Environment Form */}
+                    <div className="space-y-4 pt-4 border-t">
+                      <h4 className="text-sm font-semibold">Create New Environment</h4>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Environment Name</label>
+                        <Input
+                          placeholder="e.g., Production, Staging, Development"
+                          value={newEnvironmentName}
+                          onChange={(e) => setNewEnvironmentName(e.target.value)}
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <label className="text-sm font-medium">Variables</label>
+                          <Button size="sm" variant="outline" onClick={addEnvironmentVariable}>
+                            <Plus className="w-4 h-4 mr-1" />
+                            Add Variable
+                          </Button>
+                        </div>
+                        
+                        <div className="space-y-2 max-h-60 overflow-y-auto">
+                          {environmentVariables.map((variable, index) => (
+                            <div key={index} className="flex gap-2">
+                              <Input
+                                placeholder="Variable name (e.g., API_URL)"
+                                value={variable.key}
+                                onChange={(e) => updateEnvironmentVariable(index, "key", e.target.value)}
+                                className="flex-1"
+                              />
+                              <Input
+                                placeholder="Value"
+                                value={variable.value}
+                                onChange={(e) => updateEnvironmentVariable(index, "value", e.target.value)}
+                                className="flex-1"
+                              />
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                onClick={() => removeEnvironmentVariable(index)}
+                                disabled={environmentVariables.length === 1}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                        
+                        <p className="text-xs text-muted-foreground">
+                          Use variables in your requests with {"{{variable_name}}"} syntax
+                        </p>
+                      </div>
+                      
+                      <Button onClick={createEnvironment} className="w-full">
+                        Create Environment
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+
               <Dialog open={showSettings} onOpenChange={setShowSettings}>
                 <DialogTrigger asChild>
                   <Button variant="ghost" size="icon" title="Settings">
@@ -1426,6 +1765,10 @@ func main() {
                         <SelectItem value="python">Python (Requests)</SelectItem>
                         <SelectItem value="nodejs">Node.js (HTTPS)</SelectItem>
                         <SelectItem value="go">Go</SelectItem>
+                        <SelectItem value="php">PHP</SelectItem>
+                        <SelectItem value="ruby">Ruby</SelectItem>
+                        <SelectItem value="rust">Rust (Reqwest)</SelectItem>
+                        <SelectItem value="swift">Swift</SelectItem>
                       </SelectContent>
                     </Select>
                     <div className="relative">
@@ -2090,6 +2433,10 @@ func main() {
                             <SelectItem value="python">Python</SelectItem>
                             <SelectItem value="nodejs">Node.js</SelectItem>
                             <SelectItem value="go">Go</SelectItem>
+                            <SelectItem value="php">PHP</SelectItem>
+                            <SelectItem value="ruby">Ruby</SelectItem>
+                            <SelectItem value="rust">Rust</SelectItem>
+                            <SelectItem value="swift">Swift</SelectItem>
                           </SelectContent>
                         </Select>
                         <div className="bg-muted/50 rounded-lg p-4 border border-border max-h-[500px] overflow-auto">
